@@ -27,6 +27,15 @@ fi
 
 die() { echo "ERREUR : $*" >&2; exit 1; }
 
+# config.js du site : adresse de l'API lue dans le .env (le site et l'API peuvent avoir n'importe quels noms)
+ecrire_config_site() {
+  [ -d "$SITE_DIR" ] && [ -f "$APP_DIR/.env" ] || return 0
+  _api="$(grep '^ALLOWED_HOSTS=' "$APP_DIR/.env" | cut -d= -f2 | cut -d, -f1)"
+  _code="$(grep '^ECOLE_CODE=' "$APP_DIR/.env" | cut -d= -f2 || true)"
+  printf '// Écrit par les scripts O2switch à partir de ecole-backend/.env : ne pas modifier ici.\nwindow.ECOLE_API = "https://%s";\nwindow.ECOLE_CODE = "%s";\n' \
+    "$_api" "$_code" > "$SITE_DIR/config.js"
+}
+
 redemarrer() { mkdir -p "$PASSENGER_ROOT/tmp" && touch "$PASSENGER_ROOT/tmp/restart.txt"; }
 
 # cPanel réécrit passenger_wsgi.py quand on crée ou modifie l'application : on remet ceux du projet

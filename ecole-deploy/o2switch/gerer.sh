@@ -1,9 +1,8 @@
 #!/bin/sh
 # Gestion complète de la plateforme scolaire sur O2switch : UN SEUL script, avec un menu.
 #
-# Première fois (Terminal de cPanel) :
-#   curl -fsSL https://raw.githubusercontent.com/KoneAboudramane/ecole-horizon/main/ecole-deploy/o2switch/gerer.sh -o ~/gerer.sh
-#   sh ~/gerer.sh
+# Première fois (Terminal de cPanel), UNE commande (remplacez MOTDEPASSE par celui de la base PostgreSQL) :
+#   curl -fsSL https://raw.githubusercontent.com/KoneAboudramane/ecole-horizon/main/ecole-deploy/o2switch/gerer.sh -o ~/gerer.sh && DB_PASS='MOTDEPASSE' sh ~/gerer.sh installer
 # Ensuite, à chaque fois :  sh ~/gerer.sh
 # Sans menu :  sh ~/gerer.sh installer | mise-a-jour | sauvegarder | etat | erreurs | redemarrer
 set -eu
@@ -66,13 +65,7 @@ installer() {
   recuperer "$REPO_DIR" main && ok "   OK"
   echo "2. Site compilé   -> $SITE_DIR"
   recuperer "$SITE_DIR" site-o2switch && ok "   OK"
-  echo
-  echo "Vérifiez dans cPanel avant de continuer :"
-  echo "  - Setup Python App : application créée (racine ecole-horizon), Python 3.10 à 3.13"
-  echo "  - Domaines : le site a pour racine « ecole-site », l'API « api.<site> » existe ; SSL actif"
-  echo "  - Bases PostgreSQL : utilisateur ajouté à la base avec TOUS les droits"
-  printf 'Continuer ? (o/n) [o] : '; read -r r; case "${r:-o}" in o|O|oui) ;; *) return 0;; esac
-  sh "$O2/installer.sh"
+  AUTO="${AUTO:-1}" sh "$O2/installer.sh"
   cp "$O2/gerer.sh" "$HOME/gerer.sh.nouveau" && mv "$HOME/gerer.sh.nouveau" "$HOME/gerer.sh" 2>/dev/null || true
 }
 

@@ -18,6 +18,7 @@ if [ "${DEJA_A_JOUR:-0}" != 1 ] && [ "${SANS_GIT:-0}" != 1 ]; then
   fi
   if [ -d "$SITE_DIR/.git" ]; then
     echo "   Site : $SITE_DIR"
+    git -C "$SITE_DIR" checkout -- config.js 2>/dev/null || true   # réécrit juste après
     git -C "$SITE_DIR" pull --ff-only || die "mise à jour du site impossible ($SITE_DIR)"
   fi
   DEJA_A_JOUR=1 exec sh "$O2_DIR/mise-a-jour.sh"
@@ -42,6 +43,7 @@ python manage.py collectstatic --noinput --verbosity 0
 
 echo "5/5 Vérification et redémarrage"
 python manage.py check --deploy --fail-level ERROR
+ecrire_config_site
 redemarrer
 API_HOST="$(grep '^ALLOWED_HOSTS=' .env | cut -d= -f2 | cut -d, -f1)"
 echo "Terminé. Contrôle : https://$API_HOST/api/v1/health/"
