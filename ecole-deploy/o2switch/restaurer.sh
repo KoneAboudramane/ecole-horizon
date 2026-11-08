@@ -19,5 +19,5 @@ if [ -n "$MEDIA_TAR" ]; then
 else
   sh "$DEPLOY_DIR/scripts/restore.sh" "$DUMP"
 fi
-mkdir -p "$APP_DIR/tmp" && touch "$APP_DIR/tmp/restart.txt"
+redemarrer
 echo "Application redémarrée."

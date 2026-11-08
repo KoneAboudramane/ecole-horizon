@@ -9,16 +9,30 @@ REPO_DIR="$(cd "$APP_DIR/.." && pwd)"
 # Copie du site compilé (branche site-o2switch du dépôt), mise à jour par mise-a-jour.sh
 SITE_DIR="${SITE_DIR:-$HOME/ecole-site}"
 
-# Environnement Python créé par cPanel (« Setup Python App ») : ~/virtualenv/<racine de l'application>/<version>
+# Environnement Python créé par cPanel (« Setup Python App ») : ~/virtualenv/<racine de l'application>/<version>.
+# La racine de l'application peut être le dépôt (ecole-horizon) ou ecole-horizon/ecole-backend.
 trouver_venv() {
-  _rel="${APP_DIR#"$HOME"/}"
-  for _d in $(ls -d "$HOME/virtualenv/$_rel"/3.* "$HOME"/virtualenv/*/ecole-backend/3.* "$HOME"/virtualenv/ecole-backend/3.* 2>/dev/null | sort -V -r); do
+  _app="${APP_DIR#"$HOME"/}"; _repo="${REPO_DIR#"$HOME"/}"
+  for _d in $(ls -d "$HOME/virtualenv/$_app"/3.* "$HOME/virtualenv/$_repo"/3.* "$HOME"/virtualenv/ecole-backend/3.* 2>/dev/null | sort -V -r); do
     [ -f "$_d/bin/activate" ] && { echo "$_d"; return; }
   done
 }
 VENV="${VENV:-$(trouver_venv)}"
+# Racine de l'application Passenger (là où il lit passenger_wsgi.py et tmp/restart.txt) : déduite du chemin de VENV
+if [ -n "$VENV" ]; then
+  _r="${VENV#"$HOME"/virtualenv/}"; PASSENGER_ROOT="$HOME/${_r%/*}"
+else
+  PASSENGER_ROOT="$APP_DIR"
+fi
 
 die() { echo "ERREUR : $*" >&2; exit 1; }
+
+redemarrer() { mkdir -p "$PASSENGER_ROOT/tmp" && touch "$PASSENGER_ROOT/tmp/restart.txt"; }
+
+# cPanel réécrit passenger_wsgi.py quand on crée ou modifie l'application : on remet ceux du projet
+restaurer_passenger() {
+  [ -d "$REPO_DIR/.git" ] && git -C "$REPO_DIR" checkout -- passenger_wsgi.py ecole-backend/passenger_wsgi.py 2>/dev/null || true
+}
 
 # Lit DATABASE_URL dans le .env et exporte les variables de pg_dump / pg_restore
 charger_base() {

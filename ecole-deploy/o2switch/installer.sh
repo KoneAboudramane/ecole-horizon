@@ -13,9 +13,9 @@ ask_secret() { printf '%s : ' "$2"; stty -echo 2>/dev/null || true; read -r _r; 
 
 [ -f "$APP_DIR/manage.py" ] || die "$APP_DIR/manage.py introuvable"
 [ -n "$VENV" ] && [ -f "$VENV/bin/activate" ] || die "environnement Python introuvable. Créez l'application dans cPanel > Setup Python App (racine : ${APP_DIR#"$HOME"/}), ou indiquez VENV=/home/.../virtualenv/.../3.x"
-# cPanel réécrit passenger_wsgi.py à la création de l'application : on remet celui du projet
-if [ -d "$REPO_DIR/.git" ]; then git -C "$REPO_DIR" checkout -- ecole-backend/passenger_wsgi.py 2>/dev/null || true; fi
-grep -q "config.wsgi" "$APP_DIR/passenger_wsgi.py" 2>/dev/null || die "$APP_DIR/passenger_wsgi.py n'est pas celui du projet : remettez-le (voir le guide)"
+restaurer_passenger
+grep -q "config.wsgi" "$PASSENGER_ROOT/passenger_wsgi.py" 2>/dev/null || die "$PASSENGER_ROOT/passenger_wsgi.py n'est pas celui du projet : relancez  git -C $REPO_DIR checkout -- ."
+echo "Application Python : $PASSENGER_ROOT  (environnement $VENV)"
 . "$VENV/bin/activate"
 cd "$APP_DIR"
 
@@ -34,7 +34,7 @@ if [ "$GARDER" = 0 ]; then
   API="${API#https://}"; API="${API%/}"
 
   echo; echo "-- Base PostgreSQL créée dans cPanel --"
-  ask DB_NAME "Nom de la base" "$(id -un)_ecole"
+  ask DB_NAME "Nom de la base" "$(id -un)_ecole-horizon"
   ask DB_USER "Utilisateur de la base" "$DB_NAME"
   ask_secret DB_PASS "Mot de passe de la base"
   [ -n "$DB_PASS" ] || die "mot de passe de la base vide"
@@ -114,7 +114,7 @@ if [ -d "$API_ROOT" ]; then
 else
   echo "ATTENTION : dossier $API_ROOT absent. Créez le lien à la main :  ln -s $APP_DIR/media <dossier du sous-domaine de l'API>/media"
 fi
-mkdir -p tmp && touch tmp/restart.txt
+redemarrer
 mkdir -p "$HOME/sauvegardes-ecole" && chmod 700 "$HOME/sauvegardes-ecole"
 
 echo; echo "-- Administrateur de la plateforme --"

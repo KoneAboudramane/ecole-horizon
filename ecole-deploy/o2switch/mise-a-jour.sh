@@ -13,7 +13,7 @@ set -eu
 if [ "${DEJA_A_JOUR:-0}" != 1 ] && [ "${SANS_GIT:-0}" != 1 ]; then
   if [ -d "$REPO_DIR/.git" ]; then
     echo "0/6 Récupération de la dernière version depuis GitHub"
-    git -C "$REPO_DIR" checkout -- ecole-backend/passenger_wsgi.py 2>/dev/null || true   # cPanel peut l'avoir réécrit
+    restaurer_passenger   # cPanel peut l'avoir réécrit
     git -C "$REPO_DIR" pull --ff-only || die "mise à jour du code impossible (fichiers modifiés sur le serveur ?  git -C $REPO_DIR status)"
   fi
   if [ -d "$SITE_DIR/.git" ]; then
@@ -42,6 +42,6 @@ python manage.py collectstatic --noinput --verbosity 0
 
 echo "5/5 Vérification et redémarrage"
 python manage.py check --deploy --fail-level ERROR
-mkdir -p tmp && touch tmp/restart.txt
+redemarrer
 API_HOST="$(grep '^ALLOWED_HOSTS=' .env | cut -d= -f2 | cut -d, -f1)"
 echo "Terminé. Contrôle : https://$API_HOST/api/v1/health/"

@@ -23,3 +23,7 @@ livraison-o2switch/
 ecole-backend/tmp/
 ecole-backend/stderr.log
 ecole-backend/public/
+# Application Passenger dont la racine est le dépôt entier
+/tmp/
+/stderr.log
+/public/
