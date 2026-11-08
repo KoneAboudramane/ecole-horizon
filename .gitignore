@@ -1,0 +1,20 @@
+# Secrets et fichiers locaux
+.env
+*.sqlite3
+ecole-backend/media/
+ecole-backend/staticfiles/
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# Node / Angular
+node_modules/
+.angular/
+dist/
+
+livraison-o2switch/
+
+# Documents commerciaux et accès de démonstration : restent sur le PC
+*.docx
+*.pdf

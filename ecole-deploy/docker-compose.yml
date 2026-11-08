@@ -1,0 +1,97 @@
+# Pile complète : PostgreSQL + API Django (gunicorn) + Caddy (site Angular, HTTPS automatique) + sauvegardes quotidiennes.
+# Démarrage :  cp .env.example .env  (puis remplir)  &&  docker compose up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ecole
+      POSTGRES_USER: ecole
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?définissez POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecole -d ecole"]
+      interval: 10s
+      retries: 10
+
+  web:
+    build: ../ecole-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DEBUG: "False"
+      SECRET_KEY: ${SECRET_KEY:?définissez SECRET_KEY}
+      DATABASE_URL: postgres://ecole:${POSTGRES_PASSWORD}@db:5432/ecole
+      ALLOWED_HOSTS: ${DOMAIN:?définissez DOMAIN},localhost
+      CSRF_TRUSTED_ORIGINS: https://${DOMAIN}
+      CORS_ALLOWED_ORIGINS: https://${DOMAIN}
+      SECURE_SSL_REDIRECT: "False"   # le HTTPS est géré par Caddy ; l'en-tête X-Forwarded-Proto reste vérifié par Django
+      NUM_PROXIES: "1"               # Caddy ajoute l'adresse du visiteur à X-Forwarded-For
+      MOBILE_MONEY_SANDBOX: "0"
+      MOBILE_MONEY_WEBHOOK_SECRET: ${MOBILE_MONEY_WEBHOOK_SECRET:-}
+      MATRICULE_PREFIX: ${MATRICULE_PREFIX:-HZ}
+      PUBLIC_BASE_URL: https://${DOMAIN}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+      ADMIN_URL: ${ADMIN_URL:-admin/}
+      WEBPUSH_PUBLIC_KEY: ${WEBPUSH_PUBLIC_KEY:-}
+      WEBPUSH_PRIVATE_KEY: ${WEBPUSH_PRIVATE_KEY:-}
+      WEBPUSH_SUBJECT: ${WEBPUSH_SUBJECT:-}
+    volumes:
+      - media:/app/media
+    expose:
+      - "8000"
+
+  caddy:
+    build:
+      context: ..
+      dockerfile: ecole-deploy/Dockerfile.front
+    restart: unless-stopped
+    depends_on:
+      - web
+    environment:
+      DOMAIN: ${DOMAIN}
+      ECOLE_CODE: ${ECOLE_CODE:-}
+      ADMIN_URL: ${ADMIN_URL:-admin/}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - media:/media:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: ecole
+      PGDATABASE: ecole
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_DIR: /backups
+      MEDIA_DIR: /media
+      KEEP_DAYS: ${BACKUP_KEEP_DAYS:-30}
+      BACKUP_HOUR: ${BACKUP_HOUR:-2}
+    volumes:
+      - ./scripts:/scripts:ro
+      - backups:/backups
+      - media:/media:ro
+    entrypoint: ["sh", "/scripts/backup-loop.sh"]
+
+volumes:
+  pgdata:
+  media:
+  backups:
+  caddy_data:
+  caddy_config:

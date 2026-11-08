@@ -1,0 +1,12 @@
+# À copier sous le nom   ~/ecole-backend/media/.htaccess
+# Les photos envoyées par les utilisateurs sont servies par Apache : aucun script ne doit pouvoir s'y exécuter.
+Options -Indexes -ExecCGI
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phar .pl .py .cgi .sh
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phar
+<FilesMatch "\.(php\d?|phtml|phar|pl|py|cgi|sh|html?|svg|js)$">
+	Require all denied
+</FilesMatch>
+<IfModule mod_headers.c>
+	Header always set X-Content-Type-Options "nosniff"
+	Header always set Content-Security-Policy "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'"
+</IfModule>

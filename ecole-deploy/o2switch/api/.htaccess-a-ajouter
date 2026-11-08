@@ -1,0 +1,12 @@
+# À AJOUTER en haut du .htaccess du sous-domaine de l'API (ex. ~/api.ecole.exemple.ci/.htaccess).
+# Ne supprimez pas le bloc « CLOUDLINUX PASSENGER CONFIGURATION » écrit par cPanel : il lance l'application Python.
+
+Options -Indexes
+
+# Toujours en HTTPS
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Fichiers cachés jamais servis (le lien « media » pointe vers le dossier de l'application)
+RewriteRule (^|/)\.(?!well-known/) - [F]

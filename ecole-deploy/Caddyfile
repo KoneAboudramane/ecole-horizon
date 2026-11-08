@@ -1,0 +1,40 @@
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+
+	# Adresse du serveur pour l'application : même domaine que le site (verrouillée, non modifiable par ?api=)
+	handle /config.js {
+		header Content-Type "application/javascript"
+		header Cache-Control "no-store"
+		respond `window.ECOLE_API = "https://{$DOMAIN}"; window.ECOLE_CODE = "{$ECOLE_CODE:}";`
+	}
+
+	handle /api/* {
+		reverse_proxy web:8000
+	}
+	handle /{$ADMIN_URL:admin/}* {
+		reverse_proxy web:8000
+	}
+	handle /static/* {
+		reverse_proxy web:8000
+	}
+
+	# Photos de profil : noms de fichiers aléatoires, pas de listing de dossier
+	handle_path /media/* {
+		root * /media
+		file_server
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

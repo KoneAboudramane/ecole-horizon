@@ -1,0 +1,12 @@
+# Contrôle de qualité : `ruff check apps config` (installer avec `pip install ruff`).
+line-length = 160
+target-version = "py312"
+extend-exclude = ["migrations"]
+
+[lint]
+select = ["F", "E9", "B"]  # erreurs réelles : imports inutiles, variables non définies, pièges courants
+ignore = ["B905"]           # zip() sans strict=
+
+[lint.per-file-ignores]
+# Les petites fonctions du générateur sont définies et appelées dans le même tour de boucle : pas de variable « capturée » en retard.
+"apps/schedule/generator.py" = ["B023"]

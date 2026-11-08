@@ -1,0 +1,34 @@
+# Démarrage local : docker compose up --build
+# Production : mettre DEBUG=False, une vraie SECRET_KEY et un reverse proxy HTTPS (Nginx) devant le service web.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ecole
+      POSTGRES_USER: ecole
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ecole-dev}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecole"]
+      interval: 5s
+      retries: 10
+
+  web:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://ecole:${POSTGRES_PASSWORD:-ecole-dev}@db:5432/ecole
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      SECURE_SSL_REDIRECT: "False"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - media:/app/media
+
+volumes:
+  pgdata:
+  media:

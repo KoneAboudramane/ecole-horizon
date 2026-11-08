@@ -1,0 +1,1393 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Administration de la plateforme</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7f8;--card:#fff;--ink:#16202a;--mut:#5b6773;--line:#dfe3e8;--acc:#0f7a5a;--bad:#b3261e;--okbg:#e7f5ee;--warnbg:#fff4e0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:0 0 12px}h3{font-size:15px;margin:16px 0 8px}.mut{color:var(--mut)}.small{font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin:16px 0}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+button{padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
+button.p{background:var(--acc);border-color:var(--acc);color:#fff}button.sm{padding:5px 10px;font-size:13px}button:disabled{opacity:.5}
+button.link{border:0;background:none;color:var(--acc);padding:0;text-decoration:underline}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 14px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--mut);font-weight:600}
+.tbl{overflow-x:auto}.tag{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--okbg);white-space:nowrap}.tag.off{background:transparent;border:1px solid var(--bad);color:var(--bad)}.tag.warn{background:var(--warnbg)}
+.err{color:var(--bad);margin:10px 0}.ok{background:var(--okbg);border-radius:8px;padding:12px;margin-top:12px}.warnbox{background:var(--warnbg);border-radius:8px;padding:12px;margin-top:12px}
+code{font-family:ui-monospace,monospace}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 0}nav button[aria-current=page]{background:var(--acc);border-color:var(--acc);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}.kpi b{display:block;font-size:26px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.bar>*{flex:1 1 180px}.bar>button{flex:0 0 auto}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+
+body.isauth .top{display:none}
+.auth-wrap{min-height:calc(100vh - 40px);display:flex;align-items:center;justify-content:center}
+.auth-wrap[hidden]{display:none}
+.auth{width:100%;max-width:420px}
+.auth .card{margin:0;padding:28px 24px;box-shadow:0 8px 30px rgba(0,0,0,.07)}
+.auth .card[hidden]{display:none}
+.brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:6px}
+.brand svg{width:34px;height:34px;color:var(--acc)}.brand b{font-size:18px}
+.auth h2{text-align:center;font-size:20px;margin:10px 0 4px}.auth .sub{text-align:center;color:var(--mut);font-size:14px;margin:0 0 14px}
+.auth button.p{width:100%;padding:11px;margin-top:14px;font-weight:600}
+.auth .alt{text-align:center;margin:14px 0 0;font-size:14px}
+.pw{position:relative}.pw input{padding-right:78px}
+.pw .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);padding:4px 9px;font-size:12px;border:0;background:none;color:var(--acc)}
+.hint{font-size:12px;color:var(--bad);min-height:18px;margin:4px 0 0}
+.meter{height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px}.meter i{display:block;height:100%;width:0;background:var(--bad);transition:width .2s,background .2s}
+.rules{font-size:12px;color:var(--mut);margin:6px 0 0;padding-left:18px}
+.err:empty{display:none}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}.shake{animation:shake .35s}
+@media (prefers-reduced-motion:reduce){.spin,.shake{animation:none}.meter i{transition:none}}
+.foot{text-align:center;color:var(--mut);font-size:12px;margin-top:16px}
+
+/* --- espace connecté --- */
+.top{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:14px}
+.top h1{font-size:18px;margin:0}.brand2{display:flex;align-items:center;gap:12px}.brand2 svg{width:30px;height:30px;color:var(--acc);flex:none}
+nav{margin:0 0 16px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}nav button{display:flex;align-items:center;gap:7px;white-space:nowrap}nav svg{width:16px;height:16px}
+.sec{margin:16px 0}.sec h2{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.grid2 .card{margin:0}
+.kpi{display:flex;gap:12px;align-items:center}.kpi .ic{width:38px;height:38px;border-radius:10px;background:var(--okbg);color:var(--acc);display:grid;place-items:center;flex:none}.kpi .ic svg{width:20px;height:20px}.kpi b{font-size:24px;line-height:1.1}
+.kpi.warn .ic{background:var(--warnbg);color:#b26a00}
+.bars{display:grid;gap:10px}.brow{display:grid;grid-template-columns:minmax(80px,150px) 1fr 46px;gap:10px;align-items:center;font-size:14px}.brow .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.track{height:10px;border-radius:99px;background:var(--line);overflow:hidden}.track i{display:block;height:100%;background:var(--acc);border-radius:99px}.brow .v{text-align:right;font-variant-numeric:tabular-nums}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}
+.empty{color:var(--mut);text-align:center;padding:22px 8px}
+th .sort{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;display:inline-flex;gap:4px;align-items:center}th[aria-sort] .sort::after{content:'↕';opacity:.4}th[aria-sort=ascending] .sort::after{content:'↑';opacity:1}th[aria-sort=descending] .sort::after{content:'↓';opacity:1}
+tbody tr.click{cursor:pointer}tbody tr.click:hover{background:var(--bg)}
+.tag.ok2{background:var(--okbg)}.tag.bad{background:transparent;border:1px solid var(--bad);color:var(--bad)}
+button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.pbtn{display:inline-flex;align-items:center;gap:6px}.pbtn svg{width:15px;height:15px}
+.av{border-radius:50%;object-fit:cover;background:var(--okbg);display:inline-grid;place-items:center;font-weight:600;flex:none}.meb{display:inline-flex;align-items:center;gap:8px}.prof{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.prof h2{margin:0}.sepl{margin:16px 0 8px;font-size:15px}.tag.main{background:var(--warnbg);font-weight:600}
+.acc{border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0}.acc .h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}.cards .acc{margin:0}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:20px;max-width:min(520px,calc(100vw - 24px));width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.help h3{margin:14px 0 6px;font-size:14px;color:var(--acc)}.help ol,.help ul{margin:0;padding-left:20px;display:grid;gap:6px}.hrow{display:flex;flex-wrap:wrap;gap:6px}
+dialog::backdrop{background:rgba(10,15,20,.55)}dialog h2{margin:0 0 12px}
+dialog.drawer{margin:0 0 0 auto;height:100vh;max-height:100vh;width:min(600px,100vw);max-width:100vw;border-radius:14px 0 0 14px;overflow:auto}
+.dfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.g2 .full{grid-column:1/-1}
+.cred{background:var(--okbg);border-radius:10px;padding:12px;margin:8px 0}.cred code{font-size:16px;font-weight:600;user-select:all}
+#toasts{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:grid;gap:8px;z-index:99;width:min(92vw,420px)}.toast{background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}.toast.bad{background:var(--bad);color:#fff}
+.skel{height:14px;border-radius:6px;background:var(--line);margin:10px 0}@keyframes sk{to{background-position:-200% 0}}
+#sheet{display:none}
+@media (max-width:640px){
+  .rt thead{display:none}.rt tr{display:block;border:1px solid var(--line);border-radius:10px;margin:10px 0;padding:6px 10px}
+  .rt td{display:flex;justify-content:space-between;gap:12px;border:0;padding:5px 0;text-align:right}.rt td::before{content:attr(data-l);color:var(--mut);font-size:12px;text-align:left}
+  .g2{grid-template-columns:1fr}.brow{grid-template-columns:90px 1fr 38px}dialog.drawer{border-radius:0}
+}
+@media print{body.printing>*:not(#sheet){display:none!important}body.printing{background:#fff}#sheet{display:block;color:#000;font:14px/1.5 system-ui,sans-serif;padding:24px}#sheet h1{font-size:20px}#sheet .box{border:1px solid #000;border-radius:8px;padding:12px;margin:14px 0;break-inside:avoid}#sheet code{font-size:18px;font-weight:700}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+
+:root{--s1:#2a78d6}
+.chart{position:relative;width:100%}.chart svg{display:block;width:100%;overflow:visible}
+.chart text{fill:var(--mut);font:12px system-ui,sans-serif}.chart .grid{stroke:var(--line);stroke-width:1}
+#tip{position:fixed;z-index:120;pointer-events:none;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.2);display:none;white-space:nowrap}
+.cc-head{display:flex;justify-content:space-between;gap:8px;align-items:start;flex-wrap:wrap}.cc-head h2{margin:0}.legend{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--mut)}.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;background:var(--s1)}
+.brow .track i{background:var(--s1)}.brow .track{height:14px}.brow .track i{border-radius:0 4px 4px 0}
+.chart .brow{grid-template-columns:minmax(120px,48%) 1fr 40px}.chart .brow .n{white-space:normal;overflow:visible;line-height:1.3}
+.tblv{max-height:300px;overflow:auto}.stat-kpis{margin-bottom:4px}
+/* ===== Habillage professionnel (surcharge) ===== */
+:root{--bg:#f3f5f7;--card:#fff;--ink:#14202b;--mut:#5d6b78;--line:#e3e8ee;--acc:#0b6e53;--acc2:#095a44;--brand:#0a3b2e;--brand2:#0f5a45;--sh:0 1px 2px rgba(16,32,43,.05),0 4px 14px rgba(16,32,43,.05);--okbg:#e6f4ee;--warnbg:#fff3dc}
+body{font:15px/1.55 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:1360px;padding:0 20px 48px}
+h1,h2,h3{letter-spacing:-.01em}
+.card{border-radius:14px;box-shadow:var(--sh);padding:20px 22px}
+button{transition:background .15s,border-color .15s,box-shadow .15s,transform .05s;font-weight:500}
+button:hover:not(:disabled){border-color:#c7d0d9;background:#f7f9fb}button:active:not(:disabled){transform:translateY(1px)}
+button.p:hover:not(:disabled){background:var(--acc2);border-color:var(--acc2)}button.danger:hover:not(:disabled){background:#97201a;border-color:#97201a}
+button.bad{color:var(--bad);border-color:#f0c5c1}button.bad:hover:not(:disabled){background:#fdf0ef;border-color:var(--bad)}
+:focus-visible{outline:3px solid rgba(11,110,83,.35);outline-offset:2px;border-radius:8px}
+input,select{background:#fff;border-color:#d5dce3;transition:border-color .15s,box-shadow .15s}input:focus,select:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 3px rgba(11,110,83,.15)}input[readonly]{background:#f3f5f7;color:var(--mut)}
+label{font-weight:500}
+
+/* En-tête de marque */
+header.top{position:sticky;top:0;z-index:30;margin:0 -20px 24px;border:0;border-radius:0;padding:12px 20px;background:var(--brand);color:#fff;box-shadow:0 2px 12px rgba(10,59,46,.25)}
+header.top>.top,header.top .brand2{width:100%}
+header.top h1{color:#fff;font-size:18px;font-weight:650}header.top .mut{color:rgba(255,255,255,.75)}header.top .brand2 svg{color:#fff;background:rgba(255,255,255,.14);border-radius:10px;padding:6px;width:40px;height:40px}
+header.top>div.top{display:flex;align-items:center;gap:10px}header.top .brand2{flex:1;min-width:0}
+header.top button{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff;padding:7px 13px;font-size:14px}header.top button:hover:not(:disabled){background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.45)}
+header.top #mep{padding:4px 12px 4px 5px;border-radius:99px}header.top .av{background:#fff;color:var(--brand);width:30px!important;height:30px!important}
+header.top :focus-visible{outline-color:#fff}
+
+/* Barre latérale */
+#app{display:grid;grid-template-columns:236px minmax(0,1fr);gap:0 28px;align-items:start}
+#app[hidden]{display:none}
+#app>*{grid-column:2;min-width:0}
+#app>nav{grid-column:1;grid-row:1/12;position:sticky;top:92px;flex-direction:column;flex-wrap:nowrap;gap:2px;margin:0;overflow:visible;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;box-shadow:var(--sh)}
+#app>nav button{border:0;background:transparent;justify-content:flex-start;width:100%;padding:10px 12px;border-radius:9px;color:#33414e;font-size:14.5px;gap:11px}
+#app>nav button svg{width:18px;height:18px;opacity:.8}
+#app>nav button:hover:not(:disabled){background:#eff3f6}
+#app>nav button[aria-current=page]{background:var(--okbg);color:var(--acc2);font-weight:650;box-shadow:inset 3px 0 0 var(--acc)}
+#app>nav button[aria-current=page] svg{opacity:1}
+.ph{margin:0 0 18px}.ph h2{font-size:24px;margin:0;font-weight:700}.ph p{margin:4px 0 0;color:var(--mut)}
+.ph:empty{display:none}
+
+/* Tableaux */
+table{border-collapse:separate;border-spacing:0}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:#6b7885;background:#f7f9fb;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child{border-radius:8px 0 0 8px}th:last-child{border-radius:0 8px 8px 0}
+td{padding:12px;border-bottom:1px solid #edf0f4;vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr.click:hover{background:#f5f8fa}
+.tbl{border-radius:10px}
+
+/* Pastilles d'état */
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--okbg);color:#0a5a43;border:1px solid transparent}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.9}
+.tag.warn{background:var(--warnbg);color:#8a5200}.tag.off,.tag.bad{background:#fdeceb;border-color:transparent;color:#a3231b}
+.tag.main{background:#e8eefc;color:#2b4aa8}.tag.ok2{background:var(--okbg);color:#0a5a43}
+
+/* Indicateurs */
+.kpis{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.kpi{padding:16px 18px;border-radius:14px;box-shadow:var(--sh);align-items:flex-start;gap:14px}
+.kpi>div{min-width:0}.kpi b{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.kpi .ic{width:44px;height:44px;border-radius:12px}
+.kpi span:not(.ic){display:block;color:var(--mut);font-size:13px;line-height:1.35;margin-top:2px}
+.grid2 .card,.sec .card{box-shadow:var(--sh)}
+.item{padding:12px 0}
+
+/* Cartes d'administrateurs */
+.acc{border-radius:14px;padding:16px;background:#fff;box-shadow:var(--sh);transition:box-shadow .15s}
+.acc:hover{box-shadow:0 2px 4px rgba(16,32,43,.06),0 8px 22px rgba(16,32,43,.08)}
+.cards{grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
+.prof{gap:22px}
+
+.actions{align-items:center}.small.bad{color:var(--bad);margin-top:4px}.cred .small{margin-top:4px}.tag.mute{background:#eef1f4;color:#5d6b78}th .sort{text-transform:inherit;letter-spacing:inherit;font-weight:inherit}td .actions{flex-wrap:nowrap}td button{white-space:nowrap}
+#per{max-width:280px}.stat-kpis{margin-top:14px}
+dialog{max-height:calc(100vh - 32px);overflow:auto}dialog.wide{max-width:min(720px,calc(100vw - 24px))}.g2 .sepl{margin:18px 0 2px;padding-top:14px;border-top:1px solid var(--line)}.g2 .sepl:first-child{border-top:0;padding-top:0;margin-top:0}.g2 p.full{margin:0 0 4px}
+.dfoot{position:sticky;bottom:-24px;background:var(--card);padding:12px 0 2px;margin-bottom:-2px}
+/* Fenêtres */
+dialog{border:0;border-radius:16px;padding:24px;box-shadow:0 24px 70px rgba(10,20,30,.35)}
+dialog.drawer{border-radius:16px 0 0 16px}
+dialog::backdrop{background:rgba(10,20,30,.5);backdrop-filter:blur(2px)}
+.cred{border:1px dashed #9fd3bf}
+.toast{border-radius:12px}
+
+#kpis{grid-template-columns:repeat(3,minmax(0,1fr))}@media (max-width:640px){#kpis{grid-template-columns:1fr 1fr}}
+/* Connexion */
+body.isauth{background:var(--bg)}
+body.isauth main{padding:0 16px}
+.auth{max-width:440px}
+.auth .card{padding:34px 30px;border-radius:18px;box-shadow:0 18px 50px rgba(10,40,32,.14)}
+.brand{flex-direction:column;gap:8px;margin-bottom:14px}.brand svg{width:56px;height:56px;padding:13px;border-radius:16px;color:#fff;background:var(--brand);box-shadow:0 8px 20px rgba(10,59,46,.3)}
+.brand b{font-size:19px}
+.auth h2{font-size:22px}
+.auth input{padding:11px 12px}
+.auth button.p{padding:12px;border-radius:10px;font-size:15px}
+.foot{margin-top:18px}
+
+@media (max-width:980px){
+  main{padding:0 14px 40px}
+  header.top{margin:0 -14px 16px;padding:10px 14px}header.top .mut{display:none}header.top button{padding:6px 10px;font-size:13px}
+  #app{display:block}
+  #app>nav{position:static;flex-direction:row;overflow-x:auto;margin:0 0 16px;padding:6px;gap:4px}
+  #app>nav button{width:auto;padding:8px 12px;white-space:nowrap}
+  #app>nav button[aria-current=page]{box-shadow:inset 0 -3px 0 var(--acc)}
+  .ph h2{font-size:20px}
+  header.top #mep span:last-child{display:none}
+}
+@media (max-width:640px){header.top>div.top{flex-wrap:wrap}header.top .brand2{flex-basis:100%}header.top>div.top button{flex:1 1 auto}header.top #mep{flex:0 0 auto}.card{padding:16px}.kpis{grid-template-columns:1fr 1fr}.kpi{padding:12px}.kpi .ic{display:none}header.top h1{font-size:15px}}
+
+.vph{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}.vph:first-of-type{border-top:0}
+.vph img{width:140px;aspect-ratio:16/10;object-fit:cover;border-radius:10px;flex:none;background:var(--line)}
+.warnline{background:var(--warnbg);color:#8a5200;border-radius:10px;padding:8px 12px;margin:8px 0}
+@media(max-width:560px){.vph{flex-direction:column}.vph img{width:100%}}
+
+/* ===== Mouvement et finition (même esprit que la page d'accueil, couleurs unies, sans dégradé) ===== */
+:root{--craie:#f2c14e;--font-display:'Bricolage Grotesque',Inter,system-ui,sans-serif}
+body{font-family:Figtree,Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1,h2,h3,.kpi b,.brand b{font-family:var(--font-display)}
+@keyframes pa-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes pa-fade{from{opacity:0}to{opacity:1}}
+@keyframes pa-pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+@keyframes pa-grow{from{transform:scaleX(0)}to{transform:none}}
+@keyframes pa-grow-y{from{transform:scaleY(0)}to{transform:none}}
+@keyframes pa-slide{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+@keyframes pa-drawer{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes pa-float{50%{transform:translateY(-6px)}}
+@keyframes pa-pulse{50%{opacity:.45}}
+
+/* Couleurs unies : l'en-tête, l'icône de connexion et le fond de connexion n'ont plus de dégradé */
+header.top{background:var(--brand)}
+.brand svg{background:var(--brand)}
+body.isauth{background:var(--bg)}
+.skel{background:var(--line);animation:pa-pulse 1.2s ease-in-out infinite}
+
+/* En-tête : le bouclier respire, les boutons réagissent */
+header.top .brand2 svg{animation:pa-float 5s ease-in-out infinite}
+header.top button{transition:background .2s,border-color .2s,transform .12s}
+
+/* Menu latéral : les entrées arrivent en cascade, la section active a sa barre jaune */
+#app>nav button{position:relative;animation:pa-slide .4s cubic-bezier(.2,.8,.2,1) backwards}
+#app>nav button:nth-child(2){animation-delay:.04s}#app>nav button:nth-child(3){animation-delay:.08s}#app>nav button:nth-child(4){animation-delay:.12s}
+#app>nav button:nth-child(5){animation-delay:.16s}#app>nav button:nth-child(6){animation-delay:.2s}#app>nav button:nth-child(7){animation-delay:.24s}
+#app>nav button svg{transition:transform .2s,opacity .2s}
+#app>nav button:hover:not(:disabled) svg{transform:translateX(2px) scale(1.08);opacity:1}
+#app>nav button[aria-current=page]{box-shadow:none}
+#app>nav button[aria-current=page]::before{content:"";position:absolute;inset-inline-start:0;top:7px;bottom:7px;width:4px;border-radius:3px;background:var(--craie);animation:pa-grow-y .3s cubic-bezier(.3,1.3,.4,1) backwards}
+
+/* Titre de section : plus présent, souligné d'un trait jaune qui se dessine */
+.ph{animation:pa-rise .45s cubic-bezier(.2,.8,.2,1) backwards}
+.ph h2{font-size:clamp(24px,2.4vw,32px);font-weight:700;letter-spacing:-.025em;position:relative;padding-bottom:10px;display:inline-block}
+.ph h2::after{content:"";position:absolute;left:0;bottom:0;width:46px;height:4px;border-radius:3px;background:var(--craie);transform-origin:left;animation:pa-grow .8s cubic-bezier(.2,.8,.2,1) .2s backwards}
+.ph p{margin-top:8px}
+/* Tableau de bord : l'accueil devient une bannière vert uni */
+.ph.hero{position:relative;overflow:hidden;background:var(--brand);color:#fff;border-radius:18px;padding:24px 26px 22px;box-shadow:0 20px 44px -30px rgba(10,59,46,.7)}
+.ph.hero::after{content:"";position:absolute;right:-50px;bottom:-70px;width:190px;height:190px;border-radius:50%;border:26px solid rgba(255,255,255,.08);animation:pa-float 7s ease-in-out infinite;pointer-events:none}
+.ph.hero h2{color:#fff}.ph.hero p{color:rgba(255,255,255,.82)}
+
+/* Changement de section : les blocs montent l'un après l'autre */
+.tin>*{animation:pa-rise .5s cubic-bezier(.2,.8,.2,1) backwards}
+.tin>:nth-child(2){animation-delay:.07s}.tin>:nth-child(3){animation-delay:.14s}.tin>:nth-child(4){animation-delay:.21s}.tin>:nth-child(n+5){animation-delay:.28s}
+.grid2>.card{animation:pa-rise .55s cubic-bezier(.2,.8,.2,1) backwards}
+.grid2>.card:nth-child(2){animation-delay:.08s}.grid2>.card:nth-child(3){animation-delay:.16s}.grid2>.card:nth-child(4){animation-delay:.24s}.grid2>.card:nth-child(n+5){animation-delay:.3s}
+
+/* Cartes : titres marqués d'une petite barre, relief au survol */
+.card{transition:box-shadow .25s,border-color .25s}
+.card>h2:first-child,.cc-head h2{display:inline-flex;align-items:center;gap:10px}
+.card>h2:first-child::before,.cc-head h2::before{content:"";flex:none;width:4px;height:17px;border-radius:3px;background:var(--craie)}
+
+/* Indicateurs : liseré de couleur, cercle discret, relief, chiffre qui compte */
+.kpi{--kc:var(--acc);position:relative;overflow:hidden;transition:translate .25s,box-shadow .25s,border-color .25s;animation:pa-rise .5s cubic-bezier(.2,.8,.2,1) backwards}
+.kpis>.kpi:nth-child(4n+2){--kc:#2a78d6}.kpis>.kpi:nth-child(4n+3){--kc:#d9971e}.kpis>.kpi:nth-child(4n+4){--kc:#7a4fd0}.kpi.warn{--kc:#d9971e}
+.kpis>.kpi:nth-child(2){animation-delay:.06s}.kpis>.kpi:nth-child(3){animation-delay:.12s}.kpis>.kpi:nth-child(4){animation-delay:.18s}.kpis>.kpi:nth-child(n+5){animation-delay:.24s}
+.kpi::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--kc);transform-origin:left;animation:pa-grow .9s cubic-bezier(.2,.8,.2,1) .3s backwards}
+.kpi::after{content:"";position:absolute;right:-38px;top:-38px;width:110px;height:110px;border-radius:50%;background:color-mix(in srgb,var(--kc) 8%,transparent);transition:transform .4s;pointer-events:none}
+.kpi>*{position:relative}
+.kpi .ic{background:color-mix(in srgb,var(--kc) 13%,transparent);color:var(--kc);transition:transform .3s}
+.kpi:hover{translate:0 -3px;box-shadow:0 2px 4px rgba(16,32,43,.05),0 18px 34px -22px rgba(16,32,43,.35);border-color:color-mix(in srgb,var(--kc) 35%,var(--line))}
+.kpi:hover::after{transform:scale(1.35)}.kpi:hover .ic{transform:rotate(-6deg) scale(1.06)}
+
+/* Barres et jauges : elles se remplissent */
+.track i,.meter i{transform-origin:left;animation:pa-grow 1s cubic-bezier(.2,.8,.2,1) .2s backwards}
+
+/* Tableaux : lignes qui apparaissent, survol marqué d'un liseré */
+tbody tr{animation:pa-fade .4s ease backwards}
+tbody tr:nth-child(2){animation-delay:.03s}tbody tr:nth-child(3){animation-delay:.06s}tbody tr:nth-child(4){animation-delay:.09s}tbody tr:nth-child(5){animation-delay:.12s}
+tbody tr:nth-child(6){animation-delay:.15s}tbody tr:nth-child(7){animation-delay:.18s}tbody tr:nth-child(n+8){animation-delay:.21s}
+tbody tr td{transition:background .15s}
+tbody tr:hover td{background:#f2f7f5}
+tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
+
+/* Listes, cartes d'administrateurs, pastilles */
+.item{transition:background .2s,padding .2s}
+.item:hover{background:#f7faf9;padding-inline:8px;border-radius:8px}
+.acc{transition:box-shadow .25s,translate .25s;animation:pa-rise .5s cubic-bezier(.2,.8,.2,1) backwards}
+.acc:hover{translate:0 -3px}
+.cards>.acc:nth-child(2){animation-delay:.06s}.cards>.acc:nth-child(3){animation-delay:.12s}.cards>.acc:nth-child(n+4){animation-delay:.18s}
+
+/* Boutons : relief et pression */
+button.p{box-shadow:0 6px 16px -10px var(--acc)}
+button.p:hover:not(:disabled){box-shadow:0 10px 22px -10px var(--acc)}
+button:active:not(:disabled){transform:scale(.97)}
+
+/* Fenêtres, tiroir, messages */
+dialog[open]{animation:pa-pop .28s cubic-bezier(.2,1.2,.4,1)}
+dialog.drawer[open]{animation:pa-drawer .32s cubic-bezier(.2,.8,.2,1)}
+dialog[open]::backdrop{animation:pa-fade .2s ease}
+.toast{animation:pa-rise .3s cubic-bezier(.2,1.2,.4,1) backwards}
+
+/* Connexion : la carte monte, le bouclier flotte */
+.auth{animation:pa-rise .6s cubic-bezier(.2,.8,.2,1) backwards}
+.brand svg{animation:pa-float 5s ease-in-out infinite}
+.auth .card:not([hidden]){animation:pa-fade .35s ease backwards}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.kpi:hover,.acc:hover{translate:none}}
+
+/* Sous-onglets (Page d'accueil) */
+.subbar{display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap;margin:0 0 16px}
+.subtabs{display:flex;gap:4px;padding:4px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh);overflow-x:auto;max-width:100%;scrollbar-width:none}
+.subtabs::-webkit-scrollbar{display:none}
+.subtabs button{border:0;background:transparent;padding:8px 14px;border-radius:9px;font-size:14px;color:#33414e;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.subtabs button:hover:not(:disabled){background:#eff3f6}
+.subtabs button[aria-selected=true]{background:var(--okbg);color:var(--acc2);font-weight:650}
+.subtabs .cnt{min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--craie,#f2c14e);color:#3b2a00;font-size:12px;font-weight:700;display:inline-grid;place-items:center}
+.subtabs .cnt[hidden]{display:none}
+#t-accueil>[data-sp]:not([hidden]){animation:pa-fade .25s ease}
+/* Sous-menu « Page d'accueil » dans la barre latérale (ordinateur) */
+#app>nav .subnav{display:flex;flex-direction:column;gap:1px;margin:2px 0 6px 21px;padding-left:12px;border-left:2px solid var(--line)}
+#app>nav .subnav[hidden]{display:none}
+#app>nav .chev{margin-inline-start:auto;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);opacity:.55;transition:transform .2s}
+#app>nav [aria-expanded=true] .chev{transform:rotate(45deg)}
+@media (max-width:980px){#app>nav .chev{display:none}}
+#app>nav .subnav button{padding:7px 10px;font-size:13.5px;color:var(--mut);animation:none;justify-content:space-between}
+#app>nav .subnav button[aria-current=true]{color:var(--acc2);font-weight:650;background:#eff6f2}
+#app>nav .subnav button[aria-current=true]::before{content:"";position:absolute;left:-14px;top:6px;bottom:6px;width:2px;border-radius:2px;background:var(--acc)}
+#app>nav .subnav .cnt{min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--craie,#f2c14e);color:#3b2a00;font-size:12px;font-weight:700;display:inline-grid;place-items:center}
+#app>nav .subnav .cnt[hidden]{display:none}
+@media (min-width:981px){#t-accueil .subbar{display:none}}
+/* Action dans l'en-tête de page (ex. « Voir la page publique ») */
+.ph.withact{position:relative;padding-inline-end:220px}
+.ph .pact{position:absolute;right:0;top:6px;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);
+  color:var(--acc2);font-size:14px;font-weight:600;text-decoration:none;box-shadow:var(--sh);white-space:nowrap;transition:border-color .15s,background .15s}
+.ph .pact:hover{border-color:var(--acc);background:var(--okbg)}
+@media (max-width:640px){.ph.withact{padding-inline-end:0}.ph .pact{position:static;margin-top:12px}}
+@media (max-width:980px){#app>nav .subnav{display:none}}
+
+/* Bandeau et menu toujours visibles : --hh = hauteur du bandeau, mesurée par le script en bas de page */
+:root{--hh:72px;--side:252px}
+header.top{position:sticky;top:0;z-index:30}
+@media (max-width:980px){
+  #app>nav{position:sticky;top:var(--hh);z-index:25;box-shadow:0 6px 14px -10px rgba(16,32,43,.35)}
+}
+/* Pleine largeur sur ordinateur : bandeau d'un bord à l'autre, menu latéral fixe sur toute la hauteur */
+@media (min-width:981px){
+  main{max-width:none;margin:0;padding:0}
+  header.top{margin:0;padding:12px 24px;min-height:72px;box-sizing:border-box}
+  #app{display:block;padding:24px 24px 48px calc(var(--side) + 24px)}
+  #app>nav{position:fixed;z-index:20;top:var(--hh);bottom:0;left:0;width:var(--side);box-sizing:border-box;overflow-y:auto;margin:0;padding:16px 12px;
+    border:0;border-right:1px solid var(--line);border-radius:0;box-shadow:none}
+}
+/* enregistrer un paiement */
+dialog .pay{display:grid;gap:18px}
+.pay-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.pay-sum>div{background:#f8fafb;padding:10px 12px;display:grid;gap:4px;align-content:start}.pay-sum span{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.pay-sum b{font-size:15px}.pay-sum .tag{justify-self:start}
+.pay-sec h3{margin:0 0 10px;font-size:15px}.pay-sec .pf label{margin-top:0}
+.pay-ctl{display:grid;grid-template-columns:auto 1fr 1fr;gap:12px;align-items:start;margin-bottom:12px}
+.pay-ctl .link{font-size:13px;margin-top:6px}
+.seg{display:inline-flex;border:1px solid #d5dce3;border-radius:9px;padding:3px;background:#f3f5f7;gap:3px}
+.seg button{border:0;background:transparent;padding:7px 12px;border-radius:7px;font-size:14px;color:var(--mut)}
+.seg button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(16,32,43,.12)}
+table.ech{width:100%;border-collapse:collapse;font-size:14px}table.ech th{text-align:left;font-size:12px;color:var(--mut);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.ech td{padding:6px 8px;border-bottom:1px solid var(--line)}table.ech td:first-child{width:56px;color:var(--mut)}table.ech input{padding:7px 9px}
+table.ech tr.next td{background:#f2f9f6;font-weight:600}
+.ech-foot{display:flex;gap:10px;align-items:baseline;justify-content:flex-end;flex-wrap:wrap;padding:8px 8px 0;font-size:14px}.ech-foot span{color:var(--mut)}.ech-foot .warn-t{color:#8a5200;font-size:13px}
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.recap{border:1px solid #cfe7dc;background:var(--okbg);border-radius:12px;padding:12px 14px;display:grid;gap:4px}
+.recap>span{font-size:12px;color:#0a5a43;text-transform:uppercase;letter-spacing:.04em;font-weight:600}.recap>div{display:flex;gap:18px;flex-wrap:wrap}
+.recap.bad{background:#fdeceb;border-color:#f3c9c5;color:#a3231b}
+.ech-fiche{margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden}.ech-fiche .hd{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;background:#f8fafb;font-size:13px}
+.ech-fiche .row{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.6fr auto;gap:8px;align-items:center;padding:7px 10px;border-top:1px solid var(--line);font-size:13px}
+.ech-fiche .row.late{background:#fdf4f3}.ech-fiche .row.late .st{color:var(--bad);font-weight:600}.ech-fiche .row.paid{color:var(--mut)}
+@media (max-width:640px){.pay-sum{grid-template-columns:1fr 1fr}.pay-ctl,.pay-grid{grid-template-columns:1fr}.ech-fiche .row{grid-template-columns:1fr 1fr}}
+.pay-done{text-align:center;display:grid;gap:12px;justify-items:center}.pay-done .ic{width:52px;height:52px;border-radius:50%;background:var(--okbg);color:var(--acc);display:grid;place-items:center;font-size:26px;font-weight:700}
+.pay-done p{margin:0}.pay-done dl{display:grid;grid-template-columns:auto auto;gap:6px 18px;margin:4px 0;text-align:left;background:#f8fafb;border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.pay-done dt{color:var(--mut);font-size:13px}.pay-done dd{margin:0;font-weight:600}
+.pay-hist{margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden}.pay-hist>b{display:block;padding:8px 10px;background:#f8fafb;font-size:13px}
+.pay-hist .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border-top:1px solid var(--line);font-size:13.5px}
+.pay textarea,.ech textarea{width:100%;padding:10px;border:1px solid #d5dce3;border-radius:8px;font:inherit;resize:vertical;background:#fff;color:var(--ink)}.pay textarea:focus,.ech textarea:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 3px rgba(11,110,83,.15)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px}
+.recap ul{margin:2px 0 0;padding-left:18px;display:grid;gap:3px}
+/* modifier l'échéance */
+dialog.xwide{max-width:min(940px,calc(100vw - 24px));width:940px}
+.ech{display:grid;gap:16px}.ech label{margin-top:0}
+.ech-head{margin-top:-6px;padding-bottom:14px;border-bottom:1px solid var(--line)}.ech-now{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:14px}.ech-now span:not(.tag){color:var(--mut)}
+.ech-cols{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:start}
+.ech-main{display:grid;gap:14px;min-width:0}.ech-main .pf{display:grid;gap:6px}
+.seg-full{display:flex;width:100%}.seg-full button{flex:1;padding:8px 10px;white-space:nowrap}.seg button:disabled{opacity:.45;cursor:not-allowed}
+.ech-desc{margin:-6px 0 0;font-size:13.5px;color:var(--mut);line-height:1.45}
+.ech-date{display:grid;gap:4px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfcfd}.ech-date[hidden]{display:none}
+.chip{display:inline-flex;gap:6px;align-items:baseline;border-radius:99px;padding:6px 12px;font-size:13px}.chip span{color:var(--mut);font-size:12px}
+.chip.on{border-color:var(--acc);background:#f2f9f6;color:#0a5a43}.chip.on span{color:#0a5a43}
+.ech-aside{background:#f8fafb;border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:10px;position:sticky;top:0}.ech-aside h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.ech-ba{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.ech-ba div{display:grid;gap:2px}.ech-ba span{font-size:12px;color:var(--mut)}.ech-ba b{font-size:16px}.ech-ba .arr{font-size:18px;color:var(--acc)}.ech-ba div:last-child b{color:var(--acc)}
+.ech-aside p{margin:0}.ech-note{font-size:13.5px;line-height:1.45;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px}.ech-note.bad{background:#fdeceb;border-color:#f3c9c5;color:#a3231b}
+.tl{list-style:none;margin:4px 0 0;padding:0;display:grid}
+.tl li{position:relative;display:grid;grid-template-columns:78px 1fr;gap:10px;padding:0 0 12px 18px}
+.tl li::before{content:"";position:absolute;left:4px;top:5px;width:9px;height:9px;border-radius:50%;background:#9aa5b1;box-shadow:0 0 0 3px #f8fafb}
+.tl li::after{content:"";position:absolute;left:8px;top:16px;bottom:-2px;width:1px;background:var(--line)}.tl li:last-child::after{display:none}.tl li:last-child{padding-bottom:0}
+.tl time{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}.tl div{display:grid;gap:1px;font-size:13.5px}.tl div span{font-size:12px;color:var(--mut)}
+.tl li.info::before{background:#2a78d6}.tl li.key::before{background:var(--acc);width:11px;height:11px;left:3px;top:4px}.tl li.key b{color:var(--acc)}
+.tl li.warn::before{background:#d9971e}.tl li.bad::before{background:var(--bad)}.tl li.bad b{color:var(--bad)}
+.tl li.now::before{background:#fff;border:2px solid var(--ink);width:7px;height:7px}.tl li.now time,.tl li.now b{color:var(--ink)}.tl li.past{opacity:.55}
+.ech-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--line)}.ech-foot>div{display:flex;gap:8px}
+@media (max-width:760px){.ech-cols{grid-template-columns:1fr}.ech-aside{position:static}.seg-full{flex-direction:column}.ech-foot{flex-direction:column;align-items:stretch}.ech-foot>div{justify-content:flex-end}}
+/* fiche d'une école */
+dialog.drawer.fiche{width:min(780px,100vw);padding:0 0 24px;background:var(--bg)}
+.fiche>*{margin-left:24px;margin-right:24px}
+.fh{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:start;margin:0 0 0;padding:22px 24px 16px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;margin-left:0;margin-right:0}
+.fh-av{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);display:grid;place-items:center;font-weight:700;font-size:20px;letter-spacing:.02em}
+.fh-t{min-width:0;display:grid;gap:6px}.fh h2{margin:0;font-size:22px;line-height:1.2;color:#fff}.fh-meta{font-size:13px;color:rgba(255,255,255,.8)}.fh-meta code{background:rgba(255,255,255,.15);color:#fff;padding:1px 6px;border-radius:5px}
+.fh-tags{display:flex;gap:6px;flex-wrap:wrap}.fh .tag{background:rgba(255,255,255,.92)}
+.fh-x{width:36px;height:36px;padding:0;border-radius:10px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff;font-size:15px}.fh-x:hover:not(:disabled){background:rgba(255,255,255,.22)}
+.fh-act{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
+.fk{margin-top:14px;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.fk .kpi{padding:12px 14px;gap:10px}.fk .kpi .ic{width:36px;height:36px;border-radius:10px}.fk .kpi b{font-size:20px}
+.fh-roles{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.pill{font-size:12.5px;padding:3px 10px;border-radius:99px;background:#fff;border:1px solid var(--line);color:var(--mut)}.pill b{color:var(--ink)}
+.ftabs{display:flex;gap:4px;margin-top:18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:2;padding-top:6px}
+.ftab{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:10px 14px;color:var(--mut);font-weight:600;display:inline-flex;gap:7px;align-items:center}
+.ftab:hover:not(:disabled){color:var(--ink);background:none}.ftab.on{color:var(--acc);border-bottom-color:var(--acc)}
+.ftab .cnt{font-size:12px;background:#e9edf1;color:var(--mut);border-radius:99px;padding:0 7px}.ftab .alert{font-size:11px;background:var(--bad);color:#fff;border-radius:99px;padding:0 6px;min-width:18px;text-align:center}
+.fpanel{padding-top:16px;display:grid;gap:14px}.fpanel.in{animation:fp-in .22s ease-out}@keyframes fp-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fpanel>p{margin:0}
+.abo-card{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--sh)}
+.abo-l{display:grid;gap:6px;flex:1 1 300px;min-width:0}.abo-k{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}.abo-v{font-size:26px;letter-spacing:-.01em}
+.abo-s{font-size:13.5px;color:#0a5a43;font-weight:600}.abo-s.warn{color:#8a5200}.abo-s.bad{color:var(--bad)}
+.pbar{height:8px;background:#e9edf1;border-radius:99px;overflow:hidden;margin-top:6px}.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),#20a77b);border-radius:inherit;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.abo-next{margin-top:4px;font-size:13.5px;background:#f8fafb;border:1px solid var(--line);border-radius:9px;padding:8px 10px}.abo-next.bad{background:#fdf4f3;border-color:#f3c9c5;color:#a3231b}
+.abo-r{display:grid;gap:8px;align-content:start;min-width:210px}.abo-r button{width:100%}
+.ech-fiche,.pay-hist{background:#fff;margin-top:0}.ech-fiche .hd,.pay-hist .hd{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;background:#f8fafb;font-size:13px}.pay-hist .hd span,.ech-fiche .hd span{color:var(--mut)}
+.ech-fiche .row{padding:9px 12px;grid-template-columns:1.3fr 1fr 1fr 1fr 84px}.ech-fiche .row>button{justify-self:end}.pay-hist .row{padding:10px 12px}
+.st-chip{justify-self:start;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px}.st-chip.ok{background:var(--okbg);color:#0a5a43}.st-chip.bad{background:#fdeceb;color:#a3231b}.st-chip.part{background:var(--warnbg);color:#8a5200}.st-chip.todo{background:#eef1f4;color:#5d6b78}
+.empty-box{display:grid;gap:4px;text-align:center;padding:22px;border:1px dashed #cfd6de;border-radius:14px;background:#fff}.empty-box span{color:var(--mut);font-size:14px}
+.fcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.fcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:8px;align-content:start;box-shadow:var(--sh)}.fcard-h{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.fcard.add{border-style:dashed;box-shadow:none;place-items:center;align-content:center;color:var(--acc);font-weight:600;min-height:110px;background:transparent}.fcard.add:hover:not(:disabled){background:#f2f9f6;border-color:var(--acc)}.fcard.add svg{width:22px;height:22px}
+.dir{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:10px;box-shadow:var(--sh)}.dir.off{opacity:.7}
+.dir-h{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}.dir-av{width:40px;height:40px;border-radius:50%;background:var(--okbg);color:var(--acc);display:grid;place-items:center;font-weight:700;font-size:14px}
+.dir-t{min-width:0}.dir-t code{font-size:12px}.dir-i{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:13.5px}.dir-i dt{color:var(--mut)}.dir-i dd{margin:0;min-width:0;overflow-wrap:anywhere}
+@media (max-width:640px){.fiche>*{margin-left:16px;margin-right:16px}.fh{margin:0;padding:18px 16px 14px}.fh-act{margin-top:10px;justify-content:flex-start}.fk{grid-template-columns:1fr 1fr}.dir-h{grid-template-columns:auto 1fr}.dir-h .fh-tags{grid-column:1/-1}.abo-r{min-width:0;width:100%}}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}.sig{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}
+.sig-pv{height:84px;border-radius:8px;background:repeating-conic-gradient(#f3f5f7 0% 25%,#fff 0% 50%) 50%/16px 16px;display:grid;place-items:center;overflow:hidden}.sig-pv img{max-width:100%;max-height:76px;object-fit:contain}
+@media (max-width:640px){.sig-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <header class="top" id="top"><div class="brand2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg><div><h1>Administration de la plateforme</h1><div class="mut small" id="who">Gestion des établissements. Aucune donnée scolaire n’est visible ici.</div></div></div><button id="mep" class="meb" hidden aria-label="Mon profil"></button><button id="hlp" hidden>Aide</button><button id="sec" hidden>Sécurité</button><button id="out" hidden>Se déconnecter</button></div></header>
+
+  <div class="auth-wrap" id="authwrap"><div class="auth">
+  <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg><b>Plateforme</b></div>
+
+  <section class="card" id="login">
+    <h2>Administration</h2><p class="sub">Connexion réservée aux administrateurs de la plateforme.</p>
+    <form id="lf" novalidate><label for="u">Identifiant</label><input id="u" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+    <label for="p">Mot de passe</label><div class="pw"><input id="p" type="password" autocomplete="current-password" required ><button type="button" class="eye" data-eye="p" aria-label="Afficher le mot de passe" aria-pressed="false">Afficher</button></div>
+<div id="lcap" hidden><label for="lca">Vérification anti-robot : <span id="lcq"></span></label><div class="pw"><input id="lca" inputmode="numeric" autocomplete="off" maxlength="4" aria-describedby="lcq"><button type="button" class="eye" id="lcr" aria-label="Autre calcul">Autre</button></div></div>
+    <div id="otpw" hidden><label for="otp">Code de vérification</label><input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="20" spellcheck="false"><div class="mut small">Code à 6 chiffres de votre application d’authentification, ou un code de secours.</div></div>
+    <div class="hint" id="caps" aria-live="polite"></div>
+    <div class="err" id="le" role="alert"></div><div class="ok" id="lo" hidden role="status"></div>
+    <button class="p" type="submit" id="lb">Se connecter</button>
+    <p class="alt"><button type="button" class="link" id="forgot">Mot de passe oublié ?</button></p></form>
+  </section>
+
+  <section class="card" id="fg" hidden>
+    <h2>Mot de passe oublié</h2><p class="sub">Indiquez votre identifiant ou votre e-mail. Si un compte correspond, nous vous envoyons un lien valable une heure.</p>
+    <form id="ff" novalidate><label for="fi">Identifiant ou e-mail</label><input id="fi" required autocomplete="username" autocapitalize="none" spellcheck="false">
+<div id="fcap" hidden><label for="fca">Vérification anti-robot : <span id="fcq"></span></label><div class="pw"><input id="fca" inputmode="numeric" autocomplete="off" maxlength="4" aria-describedby="fcq"><button type="button" class="eye" id="fcr" aria-label="Autre calcul">Autre</button></div></div>
+    <div class="err" id="fe" role="alert"></div><div class="ok" id="fo" hidden role="status"></div>
+    <button class="p" type="submit" id="fbtn">Envoyer le lien</button>
+    <p class="alt"><button type="button" class="link" id="fb">← Retour à la connexion</button></p></form>
+  </section>
+
+  <section class="card" id="rs" hidden>
+    <h2>Nouveau mot de passe</h2><p class="sub">Choisissez un mot de passe que vous n’utilisez nulle part ailleurs.</p>
+    <form id="rf" novalidate><label for="rn">Nouveau mot de passe</label><div class="pw"><input id="rn" type="password" autocomplete="new-password" required minlength="8"><button type="button" class="eye" data-eye="rn" aria-label="Afficher le mot de passe" aria-pressed="false">Afficher</button></div>
+    <div class="meter" aria-hidden="true"><i id="rm"></i></div><div class="hint" id="rmt" style="color:var(--mut)"></div>
+    <label for="rc">Confirmation</label><div class="pw"><input id="rc" type="password" autocomplete="new-password" required ><button type="button" class="eye" data-eye="rc" aria-label="Afficher le mot de passe" aria-pressed="false">Afficher</button></div>
+    <ul class="rules"><li>8 caractères au moins ; mélangez lettres, chiffres et symboles.</li><li>Le lien ne fonctionne qu’une fois.</li></ul>
+    <div class="err" id="re" role="alert"></div>
+    <button class="p" type="submit" id="rb">Enregistrer</button>
+    <p class="alt"><button type="button" class="link" id="rback">Retour à la connexion</button></p></form>
+  </section>
+
+  <section class="card" id="cp" hidden>
+    <h2>Changez votre mot de passe</h2><p class="sub">Votre mot de passe est provisoire : remplacez-le pour continuer.</p>
+    <form id="cf2" novalidate><label for="cn">Nouveau mot de passe</label><div class="pw"><input id="cn" type="password" autocomplete="new-password" required minlength="8"><button type="button" class="eye" data-eye="cn" aria-label="Afficher le mot de passe" aria-pressed="false">Afficher</button></div>
+    <div class="meter" aria-hidden="true"><i id="cm"></i></div><div class="hint" id="cmt" style="color:var(--mut)"></div>
+    <label for="cc">Confirmation</label><div class="pw"><input id="cc" type="password" autocomplete="new-password" required ><button type="button" class="eye" data-eye="cc" aria-label="Afficher le mot de passe" aria-pressed="false">Afficher</button></div>
+    <div class="err" id="ce2" role="alert"></div><button class="p" type="submit" id="cbtn">Enregistrer et continuer</button></form>
+  </section>
+  <div class="foot">Aucune donnée scolaire n’est accessible depuis cet espace.</div>
+  </div></div>
+
+  <div id="app" hidden>
+    <nav aria-label="Sections"><button data-t="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Tableau de bord</button><button data-t="ecoles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/></svg>Écoles</button><button data-t="accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>Page d’accueil<span class="chev" aria-hidden="true"></span></button><div class="subnav" id="accsub" hidden role="group" aria-label="Réglages de la page d’accueil"><button type="button" data-st2="identite">Identité</button><button type="button" data-st2="banniere">Bannière et photos</button><button type="button" data-st2="contact">Contact</button><button type="button" data-st2="tarif">Tarif</button><button type="button" data-st2="chiffres">Chiffres affichés</button><button type="button" data-st2="demos">Demandes de démo <span class="cnt" id="demcnt2" hidden></span></button></div><button data-t="admins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5"/><path d="M16 5.2a3 3 0 010 5.6M18 15c2 .5 3 2 3.3 4"/></svg>Administrateurs</button><button data-t="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Statistiques</button><button data-t="profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.6-4 3.6-6 7.5-6s6.9 2 7.5 6"/></svg>Mon profil</button><button data-t="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Journal</button></nav>
+
+    <div class="ph" id="ph"></div>
+    <div id="t-dash"><div class="kpis" id="kpis"></div>
+      <section class="card sec" id="visits"></section>
+      <div class="grid2 sec"><section class="card"><h2>À surveiller</h2><p class="mut small" style="margin-top:-6px">Abonnements à renouveler, et écoles actives dont la direction ne s’est pas connectée depuis <span id="dd">30</span> jours.</p><div id="dorm"></div></section>
+      <section class="card"><h2>Élèves par école</h2><div id="bars" class="bars"></div></section></div>
+      <section class="card"><h2>Dernières écoles créées</h2><div id="rec"></div></section></div>
+
+    <div id="t-ecoles" hidden>
+      <section class="card"><div class="bar"><div><label for="q">Recherche</label><input id="q" placeholder="Nom ou code" type="search"></div>
+        <div><label for="fs">État</label><select id="fs"><option value="">Toutes</option><option value="1">Actives</option><option value="0">Suspendues</option></select></div>
+        <button id="abset" class="pbtn">Abonnement</button><button id="exp" class="pbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>Exporter</button><button id="add" class="p pbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Ajouter une école</button></div>
+        <div class="tbl"><table class="rt"><thead><tr><th aria-sort="ascending"><button class="sort" data-s="nom">Nom</button></th><th>Code</th><th aria-sort="none"><button class="sort" data-s="eleves">Élèves</button></th><th aria-sort="none"><button class="sort" data-s="comptes">Comptes</button></th><th aria-sort="none"><button class="sort" data-s="created">Création</button></th><th>État</th><th aria-sort="none"><button class="sort" data-s="abonnement_fin">Abonnement</button></th><th></th></tr></thead><tbody id="rows"></tbody></table></div><div class="err" id="te" role="alert"></div><div class="mut small" id="cnt"></div></section></div>
+
+    <div id="t-accueil" hidden>
+      <div class="subbar"><div class="subtabs" role="tablist" aria-label="Réglages de la page d’accueil">
+        <button type="button" role="tab" data-st="identite" id="st-identite" aria-controls="accid">Identité</button>
+        <button type="button" role="tab" data-st="banniere" id="st-banniere" aria-controls="accph">Bannière et photos</button>
+        <button type="button" role="tab" data-st="contact" id="st-contact" aria-controls="acccontact">Contact</button>
+        <button type="button" role="tab" data-st="tarif" id="st-tarif" aria-controls="acctarif">Tarif</button>
+        <button type="button" role="tab" data-st="chiffres" id="st-chiffres" aria-controls="accchif">Chiffres affichés</button>
+        <button type="button" role="tab" data-st="demos" id="st-demos" aria-controls="accdemos">Demandes de démo <span class="cnt" id="demcnt" hidden></span></button>
+      </div></div>
+      <section class="card" id="accid" role="tabpanel" aria-labelledby="st-identite" data-sp="identite"></section>
+      <section class="card" id="accph" role="tabpanel" aria-labelledby="st-banniere" data-sp="banniere" hidden></section>
+      <section class="card" id="acccontact" role="tabpanel" aria-labelledby="st-contact" data-sp="contact" hidden></section>
+      <section class="card" id="acctarif" role="tabpanel" aria-labelledby="st-tarif" data-sp="tarif" hidden></section>
+      <section class="card" id="accchif" role="tabpanel" aria-labelledby="st-chiffres" data-sp="chiffres" hidden></section>
+      <section class="card" id="accdemos" role="tabpanel" aria-labelledby="st-demos" data-sp="demos" hidden></section>
+    </div>
+    <div id="t-admins" hidden>
+      <section class="card"><div class="top" style="border:0;padding:0;margin:0 0 8px;background:none"><div><h2 style="margin:0">Administrateurs de la plateforme</h2><div class="mut small"><span id="aintro">Chaque administrateur a son propre compte. L’administrateur principal valide les nouveaux comptes et gère les autres.</span></div></div><button id="addadm" class="p pbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Ajouter un administrateur</button></div>
+        <div class="cards" id="acards"></div><div class="err" id="ae" role="alert"></div></section></div>
+
+    <div id="t-profil" hidden><section class="card" id="pcard"></section><section class="card" id="ppw"></section></div>
+    <div id="t-stats" hidden>
+      <div class="bar" style="margin-bottom:4px"><div><label for="per">Période</label><select id="per"><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="90">90 derniers jours</option></select></div></div>
+      <div class="kpis stat-kpis" id="skpis"></div>
+      <div class="grid2 sec"><section class="card" id="c1"></section><section class="card" id="c2"></section>
+        <section class="card" id="c3"></section><section class="card" id="c4"></section><section class="card" id="c7"></section><section class="card" id="c6"></section><section class="card" id="c5" style="grid-column:1/-1"></section></div>
+      <p class="mut small">Ces statistiques ne portent que sur l’administration de la plateforme : ses actions, les écoles qu’elle gère, les comptes de direction à suivre et la sécurité de son accès. Seul chiffre scolaire : le nombre d’élèves inscrits, sans aucun détail.</p>
+    </div>
+
+    <div id="t-journal" hidden><section class="card"><div class="bar"><div><label for="jq">Recherche</label><input id="jq" type="search" placeholder="Action, école, personne…"></div><div><label for="ja">Type d’action</label><select id="ja"><option value="">Toutes</option></select></div></div>
+      <div class="tbl"><table class="rt"><thead><tr><th>Date</th><th>Action</th><th>Détail</th><th>École</th><th>Par</th><th>IP</th></tr></thead><tbody id="jrows"></tbody></table></div><div class="err" id="je" role="alert"></div>
+      <div class="bar" style="margin-top:10px;align-items:center"><span class="mut small" id="jc"></span><button id="jmore" hidden>Charger plus</button></div></section></div>
+  </div>
+  <dialog id="dlg"></dialog><dialog id="drawer" class="drawer" aria-label="Fiche de l’école"></dialog><div id="toasts" aria-live="polite"></div><div id="tip" role="status"></div><div id="sheet"></div>
+</main>
+<script src="config.js"></script>
+<script>
+(function(){
+  var base=(window.ECOLE_API||'').replace(/\/+$/,'');
+  try{var qa=new URLSearchParams(location.search).get('api');if(!window.ECOLE_API&&qa)base=qa.replace(/\/+$/,'');}catch(e){}
+  var access='',refresh='',schools=[],me=null,$=function(i){return document.getElementById(i)};
+  var ROLE={directeur:'Directeur',fondateur:'Fondateur',admin:'Secrétariat',informatique:'Informatique'};
+  // Session : le jeton de renouvellement est gardé le temps de l'onglet (actualiser ne déconnecte pas ; fermer l'onglet, si).
+  // Le jeton d'accès (court) est renouvelé tout seul quand le serveur le refuse.
+  var RT='pf.rt',renewing=null;
+  function keep(){try{if(refresh)sessionStorage.setItem(RT,refresh);else sessionStorage.removeItem(RT)}catch(e){}}
+  function saved(){try{return sessionStorage.getItem(RT)||''}catch(e){return ''}}
+  function renew(){if(!refresh)return Promise.resolve(false);
+    if(!renewing)renewing=fetch(base+'/api/v1/auth/refresh/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh:refresh})})
+      .then(function(r){return r.ok?r.json():null}).then(function(d){if(!d||!d.access)return false;access=d.access;if(d.refresh)refresh=d.refresh;keep();return true})
+      .catch(function(){return false}).then(function(ok){renewing=null;return ok});
+    return renewing}
+  function endSession(){access='';refresh='';keep();location.reload()}
+  function api(method,path,body,again){
+    var fd=(typeof FormData!=='undefined')&&body instanceof FormData,h=fd?{}:{'Content-Type':'application/json'};if(access)h.Authorization='Bearer '+access;
+    return fetch(base+'/api/v1/'+path,{method:method,headers:h,body:body?(fd?body:JSON.stringify(body)):undefined}).then(function(r){
+      return r.text().then(function(t){var d=null;try{d=t?JSON.parse(t):null}catch(e){}
+        if(!r.ok){if(r.status===401&&access&&path.indexOf('auth/')!==0){
+            if(!again)return renew().then(function(ok){if(ok)return api(method,path,body,true);endSession();throw new Error('Session expirée : reconnectez-vous.')});
+            endSession()}
+          var m=d&&(d.detail||Object.values(d).flat().join(' '))||('Erreur '+r.status);var er=new Error(m);er.otp=!!(d&&d.otp_required);throw er}return d})});
+  }
+  function el(tag,text,cls){var e=document.createElement(tag);if(text!==undefined&&text!==null)e.textContent=text;if(cls)e.className=cls;return e}
+  function td(t){return el('td',t)}
+  function dt(s){if(!s)return '—';var d=new Date(s);return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+  function tag(ok,yes,no){return el('span',ok?yes:no,'tag'+(ok?'':' off'))}
+  function btn(text,fn,cls){var b=el('button',text,'sm'+(cls?' '+cls:''));b.onclick=fn;return b}
+  function show(id){['login','fg','rs','cp'].forEach(function(x){$(x).hidden=x!==id});$('app').hidden=true;$('authwrap').hidden=false;document.body.classList.add('isauth');var f=document.querySelector('#'+id+' input');if(f)setTimeout(function(){f.focus()},0)}
+  /* ---- confort : afficher le mot de passe, majuscules, force, état d'envoi ---- */
+  document.querySelectorAll('[data-eye]').forEach(function(b){b.onclick=function(){var i=$(b.dataset.eye),v=i.type==='password';i.type=v?'text':'password';b.textContent=v?'Masquer':'Afficher';b.setAttribute('aria-pressed',v?'true':'false');b.setAttribute('aria-label',v?'Masquer le mot de passe':'Afficher le mot de passe')}});
+  $('p').addEventListener('keyup',function(e){$('caps').textContent=(e.getModifierState&&e.getModifierState('CapsLock'))?'Verrouillage des majuscules activé.':''});
+  $('p').addEventListener('blur',function(){$('caps').textContent=''});
+  function strength(pw){var s=0;if(pw.length>=8)s++;if(pw.length>=12)s++;if(/[a-z]/.test(pw)&&/[A-Z]/.test(pw))s++;if(/\d/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;return Math.min(s,4)}
+  function meter(inp,bar,txt){inp.addEventListener('input',function(){var s=inp.value?Math.max(1,strength(inp.value)):0,L=['','Faible','Moyen','Bon','Très bon'],C=['var(--line)','var(--bad)','#d98a00','#6aa84f','var(--acc)'];bar.style.width=(s*25)+'%';bar.style.background=C[s];txt.textContent=s?'Robustesse : '+L[s]:''})}
+  meter($('rn'),$('rm'),$('rmt'));meter($('cn'),$('cm'),$('cmt'));
+  function busy(b,on,label){b.disabled=on;if(on){b.dataset.l=b.textContent;b.textContent='';var s=el('span',null,'spin');b.appendChild(s);b.appendChild(document.createTextNode(label||'Patientez…'))}else if(b.dataset.l){b.textContent=b.dataset.l}}
+  function fail(box,form,msg){box.textContent=msg;form.classList.remove('shake');void form.offsetWidth;form.classList.add('shake')}
+  function need(v,box,form,msg){if(!v.trim()){fail(box,form,msg);return false}return true}
+  /* ---- dialogues, notifications, impression ---- */
+  var IC={"dash": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"9\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\" rx=\"1\"/><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\" rx=\"1\"/><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\" rx=\"1\"/><\/svg>", "school": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 10l9-6 9 6\"/><path d=\"M5 10v9h14v-9\"/><path d=\"M10 19v-5h4v5\"/><\/svg>", "users": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"9\" cy=\"8\" r=\"3.2\"/><path d=\"M3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5\"/><path d=\"M16 5.2a3 3 0 010 5.6M18 15c2 .5 3 2 3.3 4\"/><\/svg>", "log": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 3h9l3 3v15H6z\"/><path d=\"M9 10h6M9 14h6M9 18h4\"/><\/svg>", "stu": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M2 9l10-5 10 5-10 5z\"/><path d=\"M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5\"/><\/svg>", "warn": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3l10 18H2z\"/><path d=\"M12 10v5M12 18h.01\"/><\/svg>", "pause": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M10 9v6M14 9v6\"/><\/svg>", "ok": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8 12l3 3 5-6\"/><\/svg>", "plus": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/><\/svg>", "dl": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 4v11M7 11l5 5 5-5M5 20h14\"/><\/svg>"};
+  function icon(k){var d=document.createElement('span');d.innerHTML=IC[k];return d.firstChild}
+  function toast(msg,bad){var b=el('div',msg,'toast'+(bad?' bad':''));$('toasts').appendChild(b);setTimeout(function(){b.remove()},bad?6000:3500)}
+  function ago(s){if(!s)return 'jamais connectée';var d=Math.floor((Date.now()-new Date(s))/864e5);return d<=0?'aujourd’hui':d===1?'hier':'il y a '+d+' jours'}
+  function openModal(title,body,btns){var d=$('dlg');d.onclose=null;d.textContent='';d.className='';var h=el('h2',title);h.id='dlgt';d.setAttribute('aria-labelledby','dlgt');d.appendChild(h);d.appendChild(body);
+    if(btns&&btns.length){var f=el('div',null,'dfoot');btns.forEach(function(b){f.appendChild(b)});d.appendChild(f)}if(!d.open)d.showModal();return d}
+  function closeModal(){var d=$('dlg');if(d.open)d.close()}
+  ['dlg','drawer'].forEach(function(i){$(i).addEventListener('click',function(e){if(e.target===this)this.close()})});
+  function confirmBox(title,msg,okLabel,danger){return new Promise(function(res){var ok=el('button',okLabel,danger?'danger':'p'),no=el('button','Annuler'),r=false;
+    var d=openModal(title,el('p',msg),[no,ok]);ok.onclick=function(){r=true;closeModal()};no.onclick=closeModal;d.onclose=function(){res(r)};no.focus()})}
+  function formBox(title,fields,okLabel,submit,after,wide){
+    var form=el('form',null,wide?'g2':'');form.noValidate=true;var inp={};
+    fields.forEach(function(f){if(f.h){form.appendChild(el('h3',f.h,'sepl full'));if(f.note)form.appendChild(el('p',f.note,'small mut full'));return}var w=el('div',null,f.full?'full':'');var l=el('label',f.label);l.htmlFor='fb_'+f.id;var i;if(f.options){i=el('select');f.options.forEach(function(o){var op=el('option',o[1]);op.value=o[0];i.appendChild(op)})}else{i=el('input');i.type=f.type||'text'}i.id='fb_'+f.id;i.value=f.value||'';
+      if(!f.options){if(f.ph)i.placeholder=f.ph;if(f.max)i.maxLength=f.max;i.autocapitalize='none';i.spellcheck=false}i.autocomplete=f.auto||'off';w.appendChild(l);w.appendChild(i);if(f.hint)w.appendChild(el('div',f.hint,'small mut'));form.appendChild(w);inp[f.id]=i});
+    var err=el('div',null,'err full');err.setAttribute('role','alert');form.appendChild(err);
+    var ok=el('button',okLabel,'p'),no=el('button','Annuler');ok.type='submit';no.type='button';no.onclick=closeModal;
+    var ft=el('div',null,'dfoot full');ft.appendChild(no);ft.appendChild(ok);form.appendChild(ft);
+    form.onsubmit=function(e){e.preventDefault();err.textContent='';var v={};
+      for(var k in inp){v[k]=inp[k].value.trim()}
+      for(var j=0;j<fields.length;j++){if(fields[j].required&&!v[fields[j].id]){err.textContent='Renseignez : '+fields[j].label.toLowerCase()+'.';inp[fields[j].id].focus();return}}
+      busy(ok,true,'Patientez…');Promise.resolve(submit(v)).then(function(){closeModal()},function(x){busy(ok,false);err.textContent=x.message})};
+    openModal(title,form,[]);if(after)after(inp);var first=form.querySelector('input');if(first)first.focus()}
+  function loginUrl(c){return c.ecole?location.origin+'/?ecole='+c.ecole:location.origin+location.pathname}
+  function credBox(title,list){
+    var b=el('div');b.appendChild(el('p','Notez ou imprimez ces accès : ils ne seront plus jamais affichés. Le mot de passe provisoire doit être remplacé par la personne à sa première connexion.','small mut'));
+    list.forEach(function(c){var x=el('div',null,'cred');x.appendChild(el('div',c.name));var l=el('div');l.appendChild(document.createTextNode('Identifiant : '));l.appendChild(el('code',c.username));x.appendChild(l);
+      var m=el('div');m.appendChild(document.createTextNode('Mot de passe provisoire : '));m.appendChild(el('code',c.password));x.appendChild(m);
+      if(c.invitation===true)x.appendChild(el('div','✉ Identifiant et mot de passe envoyés par e-mail à '+(c.email||'la personne')+'.','small'));else if(c.invitation===false)x.appendChild(el('div','✉ L’e-mail n’a pas pu partir : remettez ces accès à la personne.','small bad'));b.appendChild(x)});
+    var cp=el('button','Copier'),pr=el('button','Imprimer la fiche'),ok=el('button','J’ai noté ces accès','p');
+    cp.onclick=function(){var s=list.map(function(c){return c.name+'\nIdentifiant : '+c.username+'\nMot de passe provisoire : '+c.password}).join('\n\n');try{navigator.clipboard.writeText(s).then(function(){toast('Copié.')})}catch(e){toast('Copie impossible : sélectionnez le texte.',true)}};
+    pr.onclick=function(){printSheet(title,list)};ok.onclick=closeModal;openModal(title,b,[cp,pr,ok])}
+  function printSheet(title,list){var s=$('sheet');s.textContent='';s.appendChild(el('h1',title));s.appendChild(el('div','Édité le '+new Date().toLocaleDateString('fr-FR')));
+    list.forEach(function(c){var x=el('div',null,'box');x.appendChild(el('b',c.name));[['Adresse',loginUrl(c)],['Code de l’établissement',c.ecole||'plateforme'],['Identifiant',c.username],['Mot de passe provisoire',c.password]].forEach(function(r){var d=el('div');d.appendChild(document.createTextNode(r[0]+' : '));d.appendChild(el('code',r[1]));x.appendChild(d)});s.appendChild(x)});
+    s.appendChild(el('p','Ce mot de passe est provisoire : il doit être changé à la première connexion. Ne le communiquez à personne.'));
+    document.body.classList.add('printing');window.onafterprint=function(){document.body.classList.remove('printing');s.textContent=''};window.print()}
+  function skel(n){var f=document.createDocumentFragment();for(var i=0;i<(n||3);i++)f.appendChild(el('div',null,'skel'));return f}
+  var DANGER=/refus|bloqu|suspend|désactiv|supprim|non envoy/i;
+
+  /* ---- navigation ---- */
+  var tabs=['dash','ecoles','accueil','admins','profil','stats','journal'];
+  var PH={accueil:['Page d’accueil','La page publique commune à toutes les écoles. Tous ses réglages sont ici, rangés par thème.'],dash:['Tableau de bord','Vue d’ensemble des écoles et points d’attention.'],ecoles:['Écoles','Tous les établissements, leur état et leur abonnement.'],admins:['Administrateurs','Les personnes qui gèrent la plateforme.'],profil:['Mon profil','Votre photo, vos informations et votre mot de passe.'],stats:['Statistiques','L’activité de la plateforme, sans donnée scolaire détaillée.'],journal:['Journal','L’historique des actions de ce portail.']};
+  function head(t){var h=$('ph');h.textContent='';h.className='ph'+(t==='dash'?' hero':'');replay(h);var x=PH[t];if(!x)return;var n=(me&&me.name?me.name.split(' ')[0]:'');h.appendChild(el('h2',t==='dash'&&n?'Bonjour '+n:x[0]));h.appendChild(el('p',t==='dash'?x[1]+' · '+new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):x[1]));
+    if(t==='accueil'){h.classList.add('withact');var see=el('a','Voir la page publique ↗','pact');see.href=location.origin+'/';see.target='_blank';see.rel='noopener';h.appendChild(see)}}
+  var curTab='dash';function tab(t){curTab=t;head(t);tabs.forEach(function(x){$('t-'+x).hidden=x!==t});accSub();var pn=$('t-'+t);pn.classList.remove('tin');replay(pn);pn.classList.add('tin');
+    document.querySelectorAll('nav button').forEach(function(b){if(b.dataset.t===t)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+    if(t==='dash')loadDash();if(t==='ecoles')loadSchools();if(t==='accueil')loadAccueil();if(t==='admins')loadAdmins();if(t==='profil')loadProfil();if(t==='stats')loadStats();if(t==='journal')loadJournal(true)}
+  document.querySelectorAll('nav button').forEach(function(b){b.onclick=function(){tab(b.dataset.t)}});
+
+
+  /* ---- aide ---- */
+  var HELP={
+    accueil:{t:'Page d’accueil',but:'La page publique que tout le monde voit avant de se connecter. Elle est commune à toutes les écoles de la plateforme : vous seul la réglez.',
+      st:['Les réglages sont rangés par thème dans la barre latérale, sous « Page d’accueil » (sur téléphone : en sous-onglets en haut de la page) : Identité, Bannière et photos, Contact, Tarif, Chiffres affichés, Demandes de démo. Le bouton « Voir la page publique », en haut à droite, l’ouvre dans un nouvel onglet.','« Identité » : le nom et le logo affichés en haut de la page. Laissez le nom vide pour garder « Plateforme scolaire » (ou le nom de l’école si la plateforme n’en héberge qu’une).','« Bannière et photos » : ajoutez jusqu’à 6 photos, de préférence en largeur. Elles défilent en fond du haut de la page. Rangez-les avec « Avant » et « Après », ajoutez une légende si vous le souhaitez. La case du bulletin d’exemple l’affiche ou le masque par-dessus les photos.','« Contact » : WhatsApp, téléphone et e-mail affichés aux écoles intéressées. « Tarif » : afficher ou non le prix, et régler le montant. « Chiffres affichés » : la section « La plateforme en chiffres ».','« Demandes de démo » : le nombre sur l’onglet indique les demandes à traiter. Rappelez l’école, puis marquez la demande comme traitée.'],
+      er:['La photo est refusée : elle doit être en JPG, PNG ou WebP, faire au moins 800 pixels de large, et il ne peut y en avoir que 6.'],
+      ast:'Cette page est visible par tout le monde : pas de photo où des élèves sont reconnaissables sans l’accord de leurs parents.'},
+    dash:{t:'Tableau de bord',but:'Un coup d’œil sur les écoles que vous gérez : combien, combien d’élèves, et ce qui demande votre attention.',
+      st:['Lisez les chiffres du haut : écoles, comptes, élèves.','Regardez « À surveiller » : abonnements à renouveler et écoles dont la direction ne s’est pas connectée depuis longtemps.','Cliquez sur « Voir la fiche » pour ouvrir l’école concernée.'],
+      ast:'Une direction qui ne se connecte plus est souvent le premier signe d’une école qui décroche : appelez-la avant la fin de l’abonnement.'},
+    ecoles:{t:'Écoles',but:'La liste de tous les établissements, leur état et leur abonnement.',
+      st:['Cherchez une école par nom ou par code, ou filtrez par état (actives, suspendues).','« Ajouter une école » ouvre un formulaire en sections : l’école (nom, code de connexion, préfixe des matricules, fin d’abonnement), ses coordonnées (e-mail obligatoire), la direction (nom et e-mail obligatoires), puis, si besoin, le fondateur, le secrétariat et le responsable informatique (nom et e-mail vont ensemble).','À la création, la fiche des accès s’affiche une seule fois : identifiants et mots de passe provisoires, avec la mention « envoyés par e-mail » quand l’e-mail est parti. Notez-les ou imprimez la fiche avant de fermer.','Cliquez sur une école (ou « Fiche ») : vous pouvez y enregistrer un paiement d’abonnement, modifier l’échéance, corriger l’e-mail d’un compte de direction, créer un nouveau mot de passe provisoire ou renommer l’école. « Suspendre » coupe l’accès de toute l’école, sans perdre ses données.','« Abonnement » règle les tarifs, l’échéancier proposé (fin d’année scolaire, nombre de tranches, dates, arrondi), le délai de grâce et le rappel. Ce ne sont que des propositions : à chaque paiement, vous fixez le total, le nombre de tranches, les dates et les montants de l’école, et « Modifier » ajuste ensuite une tranche non réglée.'],
+      er:['Une école est en lecture seule : son abonnement est échu au-delà du délai de grâce. Elle consulte ses données mais ne peut plus rien modifier. Enregistrez le paiement reçu et tout revient.','La direction a perdu son mot de passe : ouvrez la fiche de l’école, cliquez sur « Nouveau mot de passe » à côté de son compte. Le nouveau mot de passe provisoire est envoyé par e-mail et affiché pour vous.','La création est refusée : vérifiez le code (minuscules, chiffres, tirets), l’e-mail de l’école, celui de la direction, et que chaque personne ajoutée a un nom et un e-mail.'],
+      ast:'Enregistrez chaque paiement dès réception : il règle les tranches dans l’ordre, et l’échéance passe toute seule à la tranche suivante.'},
+    acces:{t:'Accès et mots de passe',but:'Comment chaque personne se connecte, et ce qu’il faut lui remettre.',
+      st:['Chaque compte d’école se connecte avec le code de l’école, son identifiant et son mot de passe. Identifiants fixes : directeur, fondateur, secretariat, informatique. Le personnel a l’identifiant choisi à la création de son compte ; les parents ont leur téléphone ; les élèves, leur matricule.','Un mot de passe provisoire est créé avec chaque compte. Si le compte a un e-mail, un message envoie l’adresse de connexion, le code de l’école, l’identifiant et le mot de passe provisoire.','À sa première connexion, la personne doit choisir son propre mot de passe : le serveur l’impose.','Les administrateurs de la plateforme se connectent sur cette page, sans code d’école.'],
+      er:['L’e-mail n’est pas arrivé : demandez de regarder les courriers indésirables, vérifiez l’adresse dans la fiche de l’école, puis créez un nouveau mot de passe provisoire.','Le message ne part jamais : le serveur d’e-mail n’est pas configuré (voir le guide de déploiement). La fiche des accès affichée à l’écran reste la solution de secours.','Une même adresse sert à plusieurs comptes : c’est permis ; le « mot de passe oublié » enverra un lien pour chacun.'],
+      ast:'Un mot de passe provisoire ne s’affiche qu’une fois. En cas de doute, créez-en un nouveau : l’ancien cesse de fonctionner.'},
+    admins:{t:'Administrateurs',but:'Les personnes qui peuvent utiliser ce portail.',
+      st:['Consultez la liste des administrateurs : photo, état, double authentification.','L’administrateur principal ajoute un compte directement : l’e-mail est obligatoire et le mot de passe provisoire n’est affiché qu’une fois.','Un autre administrateur ne fait que proposer un compte (« Inviter ») : il reste « à valider » jusqu’à ce que l’administrateur principal le valide ou le refuse.','L’administrateur principal peut aussi désactiver ou réactiver un compte, donner un nouveau mot de passe ou retirer la double authentification d’un collègue qui a perdu son téléphone.','Chacun active sa propre double authentification depuis le bouton « Sécurité ».'],
+      er:['Un administrateur a perdu son téléphone : utilisez l’un de ses codes de secours, ou demandez à l’administrateur principal de retirer sa double authentification.','Une invitation reste « à valider » : seul l’administrateur principal peut la valider.'],
+      ast:'Peu de personnes, toutes avec la double authentification : ce portail ouvre la porte de toutes les écoles.'},
+    profil:{t:'Mon profil',but:'Votre espace personnel d’administrateur : photo, informations et mot de passe.',
+      st:['Cliquez sur « Ajouter une photo » : JPG, PNG ou WebP, 2 Mo au plus.','Modifiez votre nom, votre e-mail et votre téléphone, puis « Enregistrer ». L’e-mail est obligatoire : il sert à récupérer votre mot de passe.','Pour changer de mot de passe, saisissez l’actuel puis le nouveau deux fois.','Le bouton « Sécurité » (en haut) active la double authentification.'],
+      er:['Le mot de passe est refusé : il doit faire au moins 8 caractères et ne pas être trop courant.'],
+      ast:'Votre identifiant ne se modifie pas : il est fixé par l’administrateur principal.'},
+    stats:{t:'Statistiques',but:'Des chiffres sur l’activité de la plateforme, sans aucune donnée scolaire détaillée.',
+      st:['Choisissez la période : 7, 30 ou 90 jours.','Lisez les chiffres et les cartes : activité, écoles, comptes de direction à suivre, abonnements, sécurité.','Repérez les écarts : une école en retrait, une hausse inhabituelle de connexions échouées.'],
+      ast:'Le seul chiffre scolaire visible est le nombre d’élèves inscrits.'},
+    journal:{t:'Journal',but:'L’historique des actions de ce portail : créations, suspensions, réinitialisations, paiements, corrections.',
+      st:['Cherchez par action, école ou personne.','Filtrez par type d’action.','Chaque ligne indique la date, l’action, le détail, l’école, l’auteur et l’adresse IP ; « Charger plus » affiche les entrées plus anciennes.'],
+      ast:'Le journal ne se modifie pas. Il sert de preuve en cas de désaccord avec une école.'},
+    secu:{t:'Sécurité de votre accès',but:'La double authentification protège votre compte même si votre mot de passe est connu.',
+      st:['Cliquez sur « Sécurité », puis « Activer la double authentification ».','Scannez le code avec une application d’authentification (Google Authenticator, Microsoft Authenticator, Aegis…) ou saisissez la clé.','Saisissez le code à 6 chiffres affiché pour confirmer.','Notez les codes de secours : chacun ne sert qu’une fois et ils ne sont plus jamais affichés.','À chaque connexion, saisissez le code à 6 chiffres après votre mot de passe.'],
+      er:['Le code est refusé : vérifiez l’heure de votre téléphone, elle doit être réglée automatiquement.'],
+      ast:'Gardez les codes de secours hors du téléphone (papier, coffre).'}
+  };
+  var HELP_ORDER=['dash','ecoles','accueil','acces','admins','profil','stats','journal','secu'];
+  function helpBox(key){
+    var h=HELP[key],b=el('div',null,'help');
+    b.appendChild(el('p',h.but));
+    b.appendChild(el('h3','Comment faire'));var ol=el('ol');h.st.forEach(function(x){ol.appendChild(el('li',x))});b.appendChild(ol);
+    if(h.er){b.appendChild(el('h3','Si ça ne marche pas'));var ul=el('ul');h.er.forEach(function(x){ul.appendChild(el('li',x))});b.appendChild(ul)}
+    if(h.ast){var a=el('p',null,'small');a.appendChild(el('b','Astuce. '));a.appendChild(document.createTextNode(h.ast));b.appendChild(a)}
+    var sw=el('input');sw.type='search';sw.placeholder='Rechercher dans l’aide…';sw.setAttribute('aria-label','Rechercher dans l’aide');sw.style.margin='14px 0 6px';var sr=el('div',null,'hrow');
+    function nrm(t){return t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()}
+    sw.oninput=function(){sr.textContent='';var q=nrm(sw.value.trim());if(q.length<2)return;var ws=q.split(/\s+/),n=0;HELP_ORDER.forEach(function(k){var H=HELP[k],txt=nrm([H.t,H.but].concat(H.st,H.er||[],[H.ast||'']).join(' '));if(ws.every(function(w){return txt.indexOf(w)>=0})){n++;var x=el('button',H.t,'p');x.onclick=function(){helpBox(k)};sr.appendChild(x)}});if(!n)sr.appendChild(el('span','Aucun sujet ne correspond.','mut small'))};
+    b.appendChild(sw);b.appendChild(sr);
+    b.appendChild(el('h3','Autres sujets'));var row=el('div',null,'hrow');
+    HELP_ORDER.forEach(function(k){if(k===key)return;var x=el('button',HELP[k].t);x.onclick=function(){helpBox(k)};row.appendChild(x)});b.appendChild(row);
+    var cl=el('button','Fermer','p');cl.onclick=closeModal;var dd=openModal('Aide : '+h.t,b,[cl]);dd.scrollTop=0}
+  $('hlp').onclick=function(){helpBox(HELP[curTab]?curTab:'dash')};
+  document.addEventListener('keydown',function(e){if(e.key!=='?'||e.ctrlKey||e.metaKey||e.altKey||$('app').hidden||$('dlg').open||$('drawer').open)return;var t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT')return;e.preventDefault();$('hlp').click()});
+
+  /* ---- tableau de bord ---- */
+  /* relance une animation CSS sur un élément déjà affiché */
+  function replay(e){e.style.animation='none';void e.offsetWidth;e.style.animation=''}
+  /* le chiffre d'un indicateur compte jusqu'à sa valeur (« 1 250 », « 85,5 % ») ; le texte final est celui fourni */
+  var CALM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function countUp(b){if(CALM)return;var orig=b.textContent,m=orig.match(/\d[\d\s\u202f\u00a0]*(?:[,.]\d+)?/);if(!m)return;
+    var raw=m[0],core=raw.replace(/[\s\u202f\u00a0]+$/,''),tail=raw.slice(core.length),dm=/[,.](\d+)$/.exec(core),dec=dm?dm[1].length:0,sep=core.indexOf(',')>=0?',':'.',gm=/[\s\u202f\u00a0]/.exec(core),grp=gm?gm[0]:'';
+    var to=Number(core.replace(/[\s\u202f\u00a0]/g,'').replace(',','.'));if(!isFinite(to)||!to)return;
+    function fmt(v){var s=v.toFixed(dec).split('.'),i=grp?s[0].replace(/\B(?=(\d{3})+(?!\d))/g,grp):s[0];return (s[1]?i+sep+s[1]:i)+tail}
+    var last=orig,t0=null;function step(t){if(b.textContent!==last)return;if(t0===null)t0=t;var p=Math.min(1,(t-t0)/1000);last=p<1?orig.replace(raw,fmt(to*(1-Math.pow(1-p,3)))):orig;b.textContent=last;if(p<1)requestAnimationFrame(step)}
+    requestAnimationFrame(step)}
+  function kpi(ic,label,val,warn){var c=el('div',null,'kpi'+(warn?' warn':''));var i=el('span',null,'ic');i.appendChild(icon(ic));c.appendChild(i);var w=el('div');var kb=el('b',val);w.appendChild(kb);countUp(kb);w.appendChild(el('div',label,'mut small'));c.appendChild(w);return c}
+  /* ---- fréquentation de la page d'accueil (anonyme) ---- */
+  var visDays=30;
+  function loadVisits(){var c=$('visits');if(!c.childNodes.length)c.appendChild(skel(3));
+    api('GET','plateforme/visites/?jours='+visDays).then(drawVisits).catch(function(x){c.textContent=x.message})}
+  function drawVisits(d){var c=$('visits');c.textContent='';
+    var h=el('div');h.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap';
+    var t=el('div');t.appendChild(el('h2','Visiteurs de la page d’accueil'));t.appendChild(el('p','Comptage anonyme : chaque visiteur compte une fois par jour, sans cookie ni adresse IP conservée. Les robots sont ignorés.','mut small'));h.appendChild(t);
+    var ch=el('div',null,'actions');[[7,'7 jours'],[30,'30 jours'],[90,'90 jours']].forEach(function(o){var b=btn(o[1],function(){visDays=o[0];loadVisits()},visDays===o[0]?'p':'');ch.appendChild(b)});h.appendChild(ch);c.appendChild(h);
+    var k=el('div',null,'kpis');k.style.margin='12px 0';
+    [['users','Aujourd’hui',d.aujourdhui],['users','7 derniers jours',d.semaine],['users','30 derniers jours',d.mois],['ok','Demandes de démo ('+d.jours+' j)',d.periode.demandes]].forEach(function(x){k.appendChild(kpi(x[0],x[1],x[2]))});c.appendChild(k);
+    var mx=Math.max.apply(null,d.serie.map(function(x){return x.visiteurs}).concat([1]));
+    var g=el('div');g.style.cssText='display:flex;align-items:flex-end;gap:'+(d.jours>30?1:3)+'px;height:150px;padding:8px 0;border-bottom:1px solid var(--line)';
+    d.serie.forEach(function(x){var b=el('i');b.title=dFr(x.day)+' : '+x.visiteurs+' visiteur(s), '+x.vues+' page(s) vue(s)';
+      b.style.cssText='flex:1;min-width:2px;border-radius:3px 3px 0 0;background:var(--acc);opacity:'+(x.visiteurs?1:.18)+';height:'+Math.max(2,Math.round(x.visiteurs/mx*140))+'px';g.appendChild(b)});
+    c.appendChild(g);
+    var f=el('div');f.style.cssText='display:flex;justify-content:space-between;font-size:12px;margin-top:4px';f.className='mut';
+    f.appendChild(el('span',dFr(d.serie[0].day)));f.appendChild(el('span',dFr(d.serie[d.serie.length-1].day)));c.appendChild(f);
+    var taux=d.periode.visiteurs?Math.round(d.periode.demandes/d.periode.visiteurs*1000)/10:0;
+    c.appendChild(el('p','Sur '+d.jours+' jours : '+d.periode.visiteurs+' visiteur(s), '+d.periode.vues+' page(s) vue(s), '+d.periode.demandes+' demande(s) de démonstration'+(d.periode.visiteurs?' (soit '+String(taux).replace('.',',')+' % des visiteurs).':'.'),'small'))}
+  function loadDash(){var k=$('kpis');k.textContent='';k.appendChild(skel(2));loadVisits();
+    Promise.all([api('GET','plateforme/stats/'),api('GET','plateforme/etablissements/')]).then(function(r){var d=r[0],S=r[1];schools=S;
+      k.textContent='';[['school','Écoles',d.ecoles],['ok','Actives',d.actives],['pause','Suspendues',d.suspendues],['stu','Élèves (écoles actives)',d.eleves],['users','Comptes (écoles actives)',d.comptes],['warn','À surveiller',d.inactives.length+(d.abonnements_a_suivre||[]).length,d.inactives.length+(d.abonnements_a_suivre||[]).length>0]].forEach(function(x){k.appendChild(kpi(x[0],x[1],x[2],x[3]))});
+      $('dd').textContent=d.inactive_days;var dm=$('dorm');dm.textContent='';
+      if(!d.inactives.length&&!(d.abonnements_a_suivre||[]).length)dm.appendChild(el('p','Rien à signaler : toutes les écoles actives ont été utilisées récemment.','empty'));
+      (d.abonnements_a_suivre||[]).forEach(function(e){var it=el('div',null,'item');var l=el('div');l.appendChild(el('b',e.nom));l.appendChild(el('div',(AB[e.etat]||[''])[0]+' · échéance '+dFr(e.fin),'mut small'));it.appendChild(l);it.appendChild(btn('Voir la fiche',function(){openFiche(e.id)}));dm.appendChild(it)});
+      d.inactives.forEach(function(e){var it=el('div',null,'item');var l=el('div');l.appendChild(el('b',e.nom));l.appendChild(el('div','Direction : '+ago(e.last_login),'mut small'));it.appendChild(l);it.appendChild(btn('Voir la fiche',function(){openFiche(e.id)}));dm.appendChild(it)});
+      var bars=$('bars');bars.textContent='';var top=S.slice().sort(function(a,b){return b.eleves-a.eleves}).slice(0,8),mx=Math.max.apply(null,top.map(function(e){return e.eleves}).concat([1]));
+      if(!top.some(function(e){return e.eleves>0}))bars.appendChild(el('p','Aucun élève inscrit pour l’instant.','empty'));
+      else top.forEach(function(e){var row=el('div',null,'brow');row.appendChild(el('span',e.nom,'n'));var tr=el('span',null,'track'),i=el('i');i.style.width=Math.round(e.eleves/mx*100)+'%';tr.appendChild(i);row.appendChild(tr);row.appendChild(el('span',e.eleves,'v'));bars.appendChild(row)});
+      var rc=$('rec');rc.textContent='';d.recentes.forEach(function(e){var it=el('div',null,'item');var l=el('div');l.appendChild(el('b',e.nom));l.appendChild(el('span',' ('+e.code+')','mut small'));it.appendChild(l);it.appendChild(el('span','créée le '+dt(e.created).split(' ')[0],'mut small'));rc.appendChild(it)});
+    }).catch(function(x){k.textContent='';k.appendChild(el('div',x.message,'err'))})}
+
+  /* ---- abonnement : tarifs communs, échéancier de tranches par école ---- */
+  var AB={sans_echeance:['Sans échéance',''],actif:['À jour','ok2'],bientot:['Bientôt échu','warn'],grace:['Délai de grâce','warn'],echu:['Échu — lecture seule','bad']};
+  var NAT={inscription:'Inscription',renouvellement:'Renouvellement'};
+  function dFr(x){return x?new Date(x+'T12:00:00').toLocaleDateString('fr-FR'):'—'}
+  function abTag(e){var a=AB[e.abonnement_etat]||AB.sans_echeance;return el('span',a[0],'tag'+(a[1]?' '+a[1]:''))}
+  function abTd(e){var c=tdl('','Abonnement');c.appendChild(abTag(e));if(e.abonnement_fin)c.appendChild(el('div','jusqu’au '+dFr(e.abonnement_fin),'mut small'));return c}
+  var MODES=[['especes','Espèces'],['virement','Virement'],['mobile','Mobile money'],['cheque','Chèque'],['autre','Autre']];
+  function fcfa(n){return (+n||0).toLocaleString('fr-FR')+' FCFA'}
+  function openAbSettings(){api('GET','plateforme/abonnement/').then(function(c){
+    formBox('Réglages de l’abonnement',[
+      {h:'Tarifs — école à un seul cursus'},{id:'i1',label:'Inscription (FCFA)',type:'number',value:String(c.tarif_inscription),required:true},{id:'r1',label:'Renouvellement par an (FCFA)',type:'number',value:String(c.tarif_renouvellement),required:true},
+      {h:'Tarifs — école à plusieurs cursus',note:'Franco-arabe, bilingue… : appliqués dès que l’école a plus d’un cursus.'},{id:'i2',label:'Inscription (FCFA)',type:'number',value:String(c.tarif_inscription_multi),required:true},{id:'r2',label:'Renouvellement par an (FCFA)',type:'number',value:String(c.tarif_renouvellement_multi),required:true},
+      {h:'Échéancier proposé',note:'Point de départ du formulaire de paiement : pour chaque école, vous pouvez encore changer le total, le nombre de tranches, chaque date et chaque montant.'},
+      {id:'fa',label:'Fin de l’année scolaire (JJ/MM)',value:c.fin_annee,required:true,ph:'31/07'},{id:'ar',label:'Arrondi des tranches (FCFA, 0 = parts égales)',type:'number',value:String(c.arrondi),required:true},
+      {id:'it',label:'Inscription : nombre de tranches',type:'number',value:String(c.inscription_tranches),required:true},{id:'ie',label:'Inscription : mois entre deux tranches',type:'number',value:String(c.inscription_ecart_mois),required:true},
+      {id:'rd',label:'Renouvellement : dates des tranches (JJ/MM)',value:c.renouvellement_dates,required:true,full:true,ph:'31/07, 30/11, 29/02',hint:'Une date par tranche, séparées par des virgules. 29/02 donne la fin février chaque année.'},
+      {h:'Reçus : en-tête et mentions',note:'Imprimés sur chaque reçu, comme sur un reçu d’entreprise. Le nom, le logo et les contacts sont ceux de la page d’accueil.'},
+      {id:'ra',label:'Adresse',value:c.recu_adresse||'',max:160,full:true,ph:'Ex. Cocody Riviera 3, 08 BP 1234 Abidjan 08'},
+      {id:'rm',label:'Mentions légales',value:c.recu_mentions||'',max:200,full:true,ph:'Ex. RCCM CI-ABJ-2026-B-12345 · Compte contribuable 2612345 A'},
+      {id:'rv',label:'Ville (« Fait à … »)',value:c.recu_ville||'',max:60,ph:'Ex. Abidjan'},
+      {h:'Retards',note:'Après le délai de grâce, l’école passe en lecture seule jusqu’au paiement : elle consulte ses données mais ne modifie plus rien.'},
+      {id:'g',label:'Délai de grâce après l’échéance (jours)',type:'number',value:String(c.grace_jours),required:true},{id:'r',label:'Rappel à la direction avant l’échéance (jours)',type:'number',value:String(c.rappel_jours),required:true}],'Enregistrer',function(v){
+      return api('PATCH','plateforme/abonnement/',{tarif_inscription:+v.i1,tarif_renouvellement:+v.r1,tarif_inscription_multi:+v.i2,tarif_renouvellement_multi:+v.r2,fin_annee:v.fa,arrondi:+v.ar,
+        inscription_tranches:+v.it,inscription_ecart_mois:+v.ie,renouvellement_dates:v.rd,recu_adresse:v.ra,recu_mentions:v.rm,recu_ville:v.rv,grace_jours:+v.g,rappel_jours:+v.r}).then(function(){toast('Réglages enregistrés.')})},function(){$('dlg').classList.add('wide');recuImages(c)},true)}).catch(function(x){toast(x.message,true)})}
+  /* Signature et cachet imprimés sur les reçus : déposés tout de suite (pas besoin d'enregistrer le reste du formulaire). */
+  function recuImages(c){var form=$('dlg').querySelector('form'),err=form.querySelector('.err');
+    form.insertBefore(el('h3','Reçus : signature et cachet','sepl full'),err);
+    form.insertBefore(el('p','Imprimés en bas de chaque reçu, au-dessus de « Le responsable ». Préférez une image PNG à fond transparent (signature à l’encre foncée, cachet scanné).','small mut full'),err);
+    var g=el('div',null,'full sig-grid');[['recu_signature','Signature'],['recu_cachet','Cachet']].forEach(function(k){
+      var t=el('div',null,'sig'),pv=el('div',null,'sig-pv'),acts=el('div',null,'actions');t.appendChild(el('b',k[1]));t.appendChild(pv);t.appendChild(acts);
+      var fi=filePick(function(file){shrink(file,600,'data').then(function(u){return api('PATCH','plateforme/abonnement/',(function(o){o[k[0]]=u;return o})({}))}).then(function(r){c[k[0]]=r[k[0]];paint();toast(k[1]+' enregistré'+(k[0]==='recu_cachet'?'':'e')+'.')}).catch(function(x){toast(x.message,true)})});t.appendChild(fi);
+      function paint(){pv.textContent='';acts.textContent='';if(c[k[0]]){var im=el('img');im.src=c[k[0]];im.alt=k[1]+' actuelle';pv.appendChild(im)}else pv.appendChild(el('span','Aucune image','small mut'));
+        acts.appendChild(btn(c[k[0]]?'Remplacer':'Choisir une image',function(){fi.click()}));
+        if(c[k[0]])acts.appendChild(btn('Retirer',function(){api('PATCH','plateforme/abonnement/',(function(o){o[k[0]]='';return o})({})).then(function(){c[k[0]]='';paint();toast(k[1]+' retiré'+(k[0]==='recu_cachet'?'':'e')+'.')}).catch(function(x){toast(x.message,true)})},'bad'))}
+      paint();g.appendChild(t)});form.insertBefore(g,err)}
+
+  /* ---- enregistrer un paiement ----
+     Avec des tranches en attente, le paiement les règle dans l'ordre. Sinon il ouvre la période suivante : le serveur propose un échéancier
+     (réglages de la plateforme) que l'administrateur ajuste librement — total, nombre de tranches, chaque date, chaque montant. */
+  function payToday(){return new Date().toISOString().slice(0,10)}
+  function payField(label,input,cls){var w=el('div',null,'pf'+(cls?' '+cls:''));var l=el('label',label);if(input.id)l.htmlFor=input.id;w.appendChild(l);w.appendChild(input);return w}
+  function payInput(type,id,value,attrs){var i=el('input');i.type=type;i.id=id;i.value=value==null?'':String(value);for(var k in attrs||{})i.setAttribute(k,attrs[k]);return i}
+  function openPay(d){
+    var att=(d.echeancier||[]).filter(function(t){return t.reste>0}),ouvre=!att.length,rows=[],montantTouche=false,seq=0;
+    var form=el('form',null,'pay');form.noValidate=true;
+    // en-tête : l'école et sa situation
+    var sum=el('div',null,'pay-sum');[['État',abTag(d)],['Échéance actuelle',el('b',d.abonnement_fin?dFr(d.abonnement_fin):'Aucune')],
+      ['Reste dû',el('b',fcfa(d.reste_du||0))],['Tarif appliqué',el('b',d.multi_cursus?'Plusieurs cursus':'Un seul cursus')]].forEach(function(x){var c=el('div');c.appendChild(el('span',x[0]));c.appendChild(x[1]);sum.appendChild(c)});
+    form.appendChild(sum);
+    // 1. échéancier
+    var s1=el('section',null,'pay-sec');s1.appendChild(el('h3',ouvre?'1. Échéancier de la période':'1. Tranches en attente'));form.appendChild(s1);
+    var tb=el('table',null,'ech'),thead=el('thead'),htr=el('tr');(ouvre?['N°','Échéance','Montant (FCFA)']:['N°','Échéance','Montant','Réglé','Reste']).forEach(function(h){htr.appendChild(el('th',h))});thead.appendChild(htr);tb.appendChild(thead);
+    var body=el('tbody');tb.appendChild(body);var tfoot=el('div',null,'ech-foot');
+    var nat,nb,tot,info=el('p',null,'small mut');
+    if(ouvre){
+      var ctl=el('div',null,'pay-ctl');
+      var seg=el('div',null,'seg');seg.setAttribute('role','radiogroup');seg.setAttribute('aria-label','Nature');nat=d.prochaine_nature||'inscription';
+      ['inscription','renouvellement'].forEach(function(n){var b=el('button',NAT[n]);b.type='button';b.setAttribute('role','radio');b.dataset.n=n;b.onclick=function(){if(nat===n)return;nat=n;tot.value=String(d.tarifs[n]);nb.value=String(d.tranches_proposees[n]);paintSeg();propose()};seg.appendChild(b)});
+      var paintSeg=function(){[].forEach.call(seg.children,function(b){var on=b.dataset.n===nat;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)})};paintSeg();
+      ctl.appendChild(payField('Nature',seg));
+      nb=el('select');nb.id='pay_nb';for(var i=1;i<=12;i++){var o=el('option',i===1?'En une fois':i+' tranches');o.value=String(i);nb.appendChild(o)}nb.value=String(d.tranches_proposees[nat]);nb.onchange=propose;ctl.appendChild(payField('Paiement',nb));
+      tot=payInput('number','pay_tot',d.tarifs[nat],{min:0,step:1000});tot.onchange=propose;var ft=payField('Total de la période (FCFA)',tot);
+      var rst=el('button','Revenir au tarif','link');rst.type='button';rst.onclick=function(){tot.value=String(d.tarifs[nat]);propose()};ft.appendChild(rst);ctl.appendChild(ft);
+      s1.appendChild(ctl);
+    }else{
+      att.forEach(function(t,i){var tr=el('tr',null,i===0?'next':'');[NAT[t.nature]+' '+t.numero+'/'+t.nombre,dFr(t.echeance),fcfa(t.montant),fcfa(t.regle),fcfa(t.reste)].forEach(function(v){tr.appendChild(el('td',v))});body.appendChild(tr)});
+      info.textContent='Le paiement règle ces tranches dans l’ordre. Pour changer une date ou un montant, utilisez « Modifier » dans la fiche de l’école.';
+    }
+    s1.appendChild(el('div',null,'tbl')).appendChild(tb);s1.appendChild(tfoot);s1.appendChild(info);
+    // 2. paiement reçu
+    var s2=el('section',null,'pay-sec');s2.appendChild(el('h3','2. Paiement reçu'));var g=el('div',null,'pay-grid');
+    var mt=payInput('number','pay_m',ouvre?0:att[0].reste,{min:0,step:1000,required:''});mt.oninput=function(){montantTouche=true;recap()};
+    var mode=el('select');mode.id='pay_mode';MODES.forEach(function(m){var o=el('option',m[1]);o.value=m[0];mode.appendChild(o)});
+    var dt=payInput('date','pay_dt',payToday(),{max:payToday()}),ref=payInput('text','pay_ref','',{maxlength:60,autocomplete:'off',spellcheck:'false'});
+    g.appendChild(payField('Montant reçu (FCFA)',mt));g.appendChild(payField('Date du paiement',dt));g.appendChild(payField('Mode de paiement',mode));
+    var fref=payField('',ref),lref=fref.querySelector('label'),href=el('div',null,'small mut');fref.appendChild(href);g.appendChild(fref);
+    // N° de transaction : libellé selon le mode ; obligatoire quand le paiement laisse une trace (le serveur refuse aussi un numéro déjà enregistré)
+    var REF={mobile:['N° de transaction mobile money','Ex. MP261027.1530.A12345 — figure dans le SMS de confirmation.',1],virement:['Référence du virement','Indiquée sur l’avis de virement de la banque.',1],
+      cheque:['N° du chèque','Les 7 chiffres en bas du chèque.',1],especes:['N° du reçu remis (facultatif)','Le numéro du reçu papier, si vous en avez remis un.',0],autre:['Référence (facultatif)','',0]};
+    function paintRef(){var r=REF[mode.value]||REF.autre;lref.textContent=r[0]+(r[2]?' *':'');href.textContent=r[1];ref.required=!!r[2];ref.setAttribute('aria-required',r[2]?'true':'false')}
+    mode.onchange=paintRef;paintRef();
+    s2.appendChild(g);form.appendChild(s2);
+    // récapitulatif
+    var rc=el('div',null,'recap');rc.setAttribute('aria-live','polite');form.appendChild(rc);
+    var err=el('div',null,'err');err.setAttribute('role','alert');form.appendChild(err);
+    var ok=el('button','Enregistrer le paiement','p'),no=el('button','Annuler');ok.type='submit';no.type='button';no.onclick=closeModal;
+    var foot=el('div',null,'dfoot');foot.appendChild(no);foot.appendChild(ok);form.appendChild(foot);
+
+    function schedule(){return ouvre?rows.map(function(r){return{echeance:r.d.value,montant:Math.max(0,Math.round(+r.m.value||0))}}):att.map(function(t){return{echeance:t.echeance,montant:t.reste}})}
+    function drawRows(list){body.textContent='';rows=[];list.forEach(function(t,i){var tr=el('tr');tr.appendChild(el('td',String(i+1)));
+      var dd=payInput('date','pay_d'+i,t.echeance),mm=payInput('number','pay_a'+i,t.montant,{min:0,step:1000});dd.setAttribute('aria-label','Échéance de la tranche '+(i+1));mm.setAttribute('aria-label','Montant de la tranche '+(i+1));
+      dd.oninput=mm.oninput=function(){if(!montantTouche&&i===0)mt.value=mm.value;recap()};
+      var c1=el('td'),c2=el('td');c1.appendChild(dd);c2.appendChild(mm);tr.appendChild(c1);tr.appendChild(c2);body.appendChild(tr);rows.push({d:dd,m:mm})});
+      if(!montantTouche&&list.length)mt.value=String(list[0].montant);recap()}
+    function propose(){var n=++seq;info.textContent='Calcul de l’échéancier…';
+      api('GET','plateforme/etablissements/'+d.id+'/abonnement/plan/?nature='+nat+'&tranches='+nb.value+'&total='+Math.max(0,Math.round(+tot.value||0))).then(function(p){if(n!==seq)return;
+        info.textContent='Période couverte jusqu’au '+dFr(p.periode_fin)+'. Dates et montants modifiables : le total de l’échéancier est la somme des tranches.';drawRows(p.tranches)}).catch(function(x){if(n===seq)info.textContent=x.message})}
+    function recap(){var sc=schedule(),total=sc.reduce(function(s,t){return s+t.montant},0),paye=Math.max(0,Math.round(+mt.value||0)),reste=paye,next=null;
+      tfoot.textContent='';if(ouvre){var a=el('span','Total de l’échéancier');var b=el('b',fcfa(total));tfoot.appendChild(a);tfoot.appendChild(b);
+        if(tot&&total!==Math.round(+tot.value||0)){var w=el('span','différent du total saisi ('+fcfa(+tot.value||0)+')','warn-t');tfoot.appendChild(w)}}
+      sc.forEach(function(t){var r=Math.min(reste,t.montant);reste-=r;if(next===null&&r<t.montant)next=t});
+      var du=total-Math.min(paye,total);rc.textContent='';rc.className='recap'+(paye>total?' bad':'');
+      if(paye>total){rc.appendChild(el('b','Montant supérieur au reste dû ('+fcfa(total)+').'));return}
+      rc.appendChild(el('span','Après ce paiement'));var l=el('div');l.appendChild(el('b','Reste dû : '+fcfa(du)));
+      l.appendChild(el('b',next?'Accès jusqu’au '+dFr(next.echeance):(ouvre?'Période soldée':'Tranches soldées')));rc.appendChild(l)}
+
+    form.onsubmit=function(e){e.preventDefault();err.textContent='';var paye=Math.round(+mt.value),sc=schedule();
+      if(!mt.value||isNaN(paye)||paye<0){err.textContent='Indiquez le montant reçu.';mt.focus();return}
+      if(ref.required&&!ref.value.trim()){err.textContent='Indiquez : '+REF[mode.value][0].toLowerCase()+'.';ref.focus();return}
+      if(ouvre){for(var i=0;i<sc.length;i++){if(!sc[i].echeance){err.textContent='Indiquez la date de la tranche '+(i+1)+'.';rows[i].d.focus();return}if(i&&sc[i].echeance<sc[i-1].echeance){err.textContent='Les tranches doivent se suivre dans l’ordre des dates (tranche '+(i+1)+').';rows[i].d.focus();return}}}
+      var bodyReq={montant:paye,mode:mode.value,reference:ref.value.trim(),date:dt.value||undefined};if(ouvre){bodyReq.nature=nat;bodyReq.echeancier=sc}
+      busy(ok,true,'Enregistrement…');api('POST','plateforme/etablissements/'+d.id+'/abonnement/paiement/',bodyReq).then(function(r){loadSchools();drawFiche(r);payDone(r)},function(x){busy(ok,false);err.textContent=x.message})};
+    var dlg=openModal('Enregistrer un paiement — '+d.nom,form,[]);dlg.classList.add('wide');
+    if(ouvre)propose();else recap();mt.focus()}
+  /* Le reçu PDF demande le jeton : on le télécharge puis on l'ouvre dans un nouvel onglet (ouvert tout de suite, sinon le navigateur le bloque). */
+  function openRecu(id,duplicata){var w=window.open('','_blank');if(w)w.document.write('<p style="font:15px system-ui;padding:24px">Préparation du reçu…</p>');
+    var get=function(again){return fetch(base+'/api/v1/plateforme/paiements/'+id+'/recu.pdf'+(duplicata?'?duplicata=1':''),{headers:{Authorization:'Bearer '+access}}).then(function(r){
+      if(r.status===401&&!again)return renew().then(function(ok){if(!ok)throw new Error('Session expirée : reconnectez-vous.');return get(true)});if(!r.ok)throw new Error('Reçu indisponible (erreur '+r.status+').');return r.blob()})};
+    get(false).then(function(b){var u=URL.createObjectURL(b);if(w)w.location.href=u;else location.href=u;setTimeout(function(){URL.revokeObjectURL(u)},60000)}).catch(function(x){if(w)w.close();toast(x.message,true)})}
+  function payDone(r){var pa=r.paiement||{},b=el('div',null,'pay-done');var ic=el('div','✓','ic');ic.setAttribute('aria-hidden','true');b.appendChild(ic);
+    b.appendChild(el('p','Le paiement de '+fcfa(pa.montant)+' est enregistré pour '+r.nom+'.'));
+    var g=el('dl');[['N° de reçu',pa.numero],['Reste dû',fcfa(r.reste_du||0)],['Accès jusqu’au',r.abonnement_fin?dFr(r.abonnement_fin):'—']].forEach(function(x){g.appendChild(el('dt',x[0]));g.appendChild(el('dd',x[1]))});b.appendChild(g);
+    b.appendChild(el('p','Remettez le reçu à l’école : imprimez-le ou envoyez le PDF. Vous le retrouverez dans la fiche de l’école, rubrique Paiements.','small mut'));
+    var pr=el('button','Ouvrir le reçu','p'),fe=el('button','Fermer');pr.type=fe.type='button';pr.onclick=function(){openRecu(pa.id,false)};fe.onclick=closeModal;
+    openModal('Paiement enregistré',b,[fe,pr]);pr.focus()}
+  function openTranche(d,t){formBox('Modifier la tranche — '+NAT[t.nature]+' '+t.numero+'/'+t.nombre,[
+      {id:'e',label:'Échéance',type:'date',value:t.echeance,required:true},{id:'m',label:'Montant (FCFA)',type:'number',value:String(t.montant),required:true,hint:t.regle?'Déjà réglé : '+fcfa(t.regle)+'. Le montant ne peut pas descendre en dessous.':'0 annule la tranche.'}],'Enregistrer',function(v){
+      return api('PATCH','plateforme/etablissements/'+d.id+'/abonnement/tranches/'+t.id+'/',{echeance:v.e,montant:+v.m}).then(function(r){toast('Tranche modifiée. Accès jusqu’au '+dFr(r.abonnement_fin)+'.');loadSchools();drawFiche(r)})},null,true)}
+  /* ---- échéance d'accès décidée à la main : délai (avec motif), retour à l'échéancier, ou sans échéance ---- */
+  function addDays(iso,n){var t=new Date(iso+'T12:00:00');t.setDate(t.getDate()+n);return t.toISOString().slice(0,10)}
+  function daysBetween(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5)}
+  function openEcheance(d){
+    var calc=d.echeance_calculee,cur=d.abonnement_fin,now=payToday(),act='delai',base=cur&&cur>now?cur:now,g=+d.grace_jours||0,rp=+d.rappel_jours||0;
+    var form=el('form',null,'ech');form.noValidate=true;
+    var head=el('div',null,'ech-head');var ht=el('div');ht.appendChild(el('span',d.nom+(d.code?' · code '+d.code:''),'small mut'));var hs=el('div',null,'ech-now');hs.appendChild(abTag(d));
+    hs.appendChild(el('span',cur?'Échéance actuelle : '+dFr(cur):'Aucune échéance'));if(d.reste_du)hs.appendChild(el('span','Reste dû : '+fcfa(d.reste_du)));ht.appendChild(hs);head.appendChild(ht);form.appendChild(head);
+    var cols=el('div',null,'ech-cols'),left=el('div',null,'ech-main'),aside=el('aside',null,'ech-aside');cols.appendChild(left);cols.appendChild(aside);form.appendChild(cols);
+    // 1. l'action, en onglets
+    var CH={delai:['Accorder un délai','L’école garde l’accès complet jusqu’à la date choisie. L’échéancier ne change pas : au prochain paiement, l’échéance repart de la prochaine tranche.'],
+      echeancier:['Revenir à l’échéancier',calc?'Annule le délai accordé : l’échéance revient au '+dFr(calc)+', date de la prochaine tranche non réglée.':''],
+      sans:['Sans échéance','École exemptée : ni rappel ni lecture seule. À réserver à une école partenaire ou à une période d’essai.']};
+    var tabs=el('div',null,'seg seg-full');tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Décision');
+    Object.keys(CH).forEach(function(k){var b=el('button',CH[k][0]);b.type='button';b.setAttribute('role','tab');b.dataset.k=k;
+      if(k==='echeancier'&&(!calc||calc===cur)){b.disabled=true;b.title=calc?'L’échéance suit déjà l’échéancier.':'Pas encore d’échéancier : enregistrez d’abord un paiement.'}
+      b.onclick=function(){act=k;paint()};tabs.appendChild(b)});
+    left.appendChild(payField('Décision',tabs));var desc=el('p',null,'ech-desc');left.appendChild(desc);
+    // 2. la date (délai seulement)
+    var box=el('div',null,'ech-date'),dt=payInput('date','ech_date',addDays(base,15),{min:now}),chips=el('div',null,'chips');
+    [7,15,30,60].forEach(function(n){var b=el('button',null,'chip');b.type='button';b.dataset.v=addDays(base,n);b.appendChild(el('b','+'+n+' j'));b.appendChild(el('span',dFr(b.dataset.v).slice(0,5)));b.onclick=function(){dt.value=b.dataset.v;paint()};chips.appendChild(b)});
+    box.appendChild(payField('Nouvelle échéance',dt));box.appendChild(chips);box.appendChild(el('p','Raccourcis comptés à partir du '+dFr(base)+(cur&&cur>now?', échéance actuelle.':', aujourd’hui.'),'small mut'));dt.oninput=paint;left.appendChild(box);
+    // 3. le motif
+    var mo=el('textarea');mo.id='ech_motif';mo.rows=3;mo.maxLength=200;mo.placeholder='Ex. virement annoncé par la direction pour le 15, accord du fondateur…';
+    var fm=payField('Motif',mo),cnt=el('span',null,'small mut');fm.appendChild(cnt);mo.oninput=function(){cnt.textContent=mo.value.length+'/200'};mo.oninput();left.appendChild(fm);
+    var err=el('div',null,'err');err.setAttribute('role','alert');left.appendChild(err);
+    var ok=el('button','Enregistrer','p'),no=el('button','Annuler');ok.type='submit';no.type='button';no.onclick=closeModal;
+    var foot=el('div',null,'dfoot ech-foot');foot.appendChild(el('span','La décision et son motif sont notés dans le journal.','small mut'));var fb=el('div');fb.appendChild(no);fb.appendChild(ok);foot.appendChild(fb);form.appendChild(foot);
+
+    function cible(){return act==='delai'?dt.value:act==='echeancier'?calc:null}
+    function paint(){[].forEach.call(tabs.children,function(b){var on=b.dataset.k===act;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+      desc.textContent=CH[act][1];box.hidden=act!=='delai';fm.querySelector('label').textContent=act==='echeancier'?'Motif (facultatif)':'Motif *';
+      [].forEach.call(chips.children,function(c){c.classList.toggle('on',c.dataset.v===dt.value)});
+      ok.textContent=act==='delai'?'Accorder le délai':act==='echeancier'?'Revenir à l’échéancier':'Exempter l’école';
+      // aperçu : avant → après, puis le calendrier de l'école
+      var f=cible();aside.textContent='';aside.appendChild(el('h3','Aperçu'));
+      var ba=el('div',null,'ech-ba');var a1=el('div');a1.appendChild(el('span','Avant'));a1.appendChild(el('b',cur?dFr(cur):'Aucune'));
+      var a2=el('div');a2.appendChild(el('span','Après'));a2.appendChild(el('b',act==='sans'?'Sans échéance':f?dFr(f):'—'));ba.appendChild(a1);ba.appendChild(el('span','→','arr'));ba.appendChild(a2);aside.appendChild(ba);
+      if(f&&cur&&act!=='sans'){var n=daysBetween(cur,f);aside.appendChild(el('p',n===0?'Même date qu’aujourd’hui.':(n>0?'+':'')+n+' jour'+(Math.abs(n)>1?'s':'')+' par rapport à l’échéance actuelle.','small mut'))}
+      if(act==='sans'){aside.appendChild(el('p','La direction ne reçoit plus de rappel et l’école ne passe jamais en lecture seule, jusqu’à ce que vous fixiez une nouvelle échéance.','ech-note'));return}
+      if(!f){aside.appendChild(el('p','Choisissez une date.','small mut'));return}
+      var steps=[[rp?addDays(f,-rp):null,'Rappel à la direction','Bandeau « bientôt échu »','info'],[f,'Fin de l’accès normal','Nouvelle échéance','key'],
+        [g?addDays(f,g):null,'Fin du délai de grâce','Accès encore complet, bandeau d’alerte','warn'],[addDays(f,g+1),'Lecture seule','Si rien n’est réglé d’ici là','bad']].filter(function(s){return s[0]});
+      steps.push([now,'Aujourd’hui','','now']);steps.sort(function(a,b){return a[0]<b[0]?-1:a[0]>b[0]?1:(a[3]==='now'?-1:1)});
+      var tl=el('ol',null,'tl');steps.forEach(function(s){var li=el('li',null,s[3]+(s[3]!=='now'&&s[0]<now?' past':''));li.appendChild(el('time',dFr(s[0])));var t=el('div');t.appendChild(el('b',s[1]));if(s[2])t.appendChild(el('span',s[2]));li.appendChild(t);tl.appendChild(li)});aside.appendChild(tl);
+      if(f<now)aside.appendChild(el('p','Date déjà passée : l’école sera tout de suite '+(addDays(f,g)<now?'en lecture seule.':'en délai de grâce.'),'ech-note bad'))}
+    form.onsubmit=function(e){e.preventDefault();err.textContent='';var m=mo.value.trim();
+      if(act==='delai'&&!dt.value){err.textContent='Indiquez la nouvelle échéance.';dt.focus();return}
+      if(act!=='echeancier'&&!m){err.textContent='Indiquez le motif : il est noté dans le journal.';mo.focus();return}
+      busy(ok,true,'Enregistrement…');api('POST','plateforme/etablissements/'+d.id+'/abonnement/echeance/',{action:act,date:act==='delai'?dt.value:undefined,motif:m}).then(function(r){closeModal();
+        toast(r.abonnement_fin?'Échéance : '+dFr(r.abonnement_fin)+'.':'École sans échéance.');loadSchools();drawFiche(r)},function(x){busy(ok,false);err.textContent=x.message})};
+    var dlg=openModal('Modifier l’échéance',form,[]);dlg.classList.add('wide','xwide');paint();dt.focus()}
+  /* ---- écoles ---- */
+  var sort={k:'nom',dir:1};
+  function loadSchools(){$('te').textContent='';api('GET','plateforme/etablissements/').then(function(r){schools=r;drawSchools()}).catch(function(x){$('te').textContent=x.message})}
+  function tdl(v,l){var c=el('td',v);c.dataset.l=l;return c}
+  function drawSchools(){
+    var q=$('q').value.trim().toLowerCase(),f=$('fs').value,tb=$('rows');tb.textContent='';
+    var rows=schools.filter(function(e){return(!q||(e.nom+' '+e.code).toLowerCase().indexOf(q)>=0)&&(f===''||String(+e.actif)===f)}).sort(function(a,b){var x=a[sort.k],y=b[sort.k];if(sort.k==='abonnement_fin'){x=x||'9999';y=y||'9999'}return(typeof x==='string'?x.localeCompare(y,'fr'):x-y)*sort.dir});
+    rows.forEach(function(e){var tr=el('tr',null,'click');tr.tabIndex=0;tr.appendChild(tdl(e.nom,'Nom'));var c=tdl('','Code');c.appendChild(el('code',e.code));tr.appendChild(c);tr.appendChild(tdl(e.eleves,'Élèves'));tr.appendChild(tdl(e.comptes,'Comptes'));tr.appendChild(tdl(dt(e.created).split(' ')[0],'Création'));
+      var s=tdl('','État');s.appendChild(tag(e.actif,'Active','Suspendue'));tr.appendChild(s);tr.appendChild(abTd(e));
+      var a=el('td'),w=el('div',null,'actions');w.appendChild(btn('Fiche',function(ev){ev.stopPropagation();openFiche(e.id)}));w.appendChild(btn(e.actif?'Suspendre':'Réactiver',function(ev){ev.stopPropagation();toggleSchool(e)}));a.appendChild(w);tr.appendChild(a);
+      tr.onclick=function(){openFiche(e.id)};tr.onkeydown=function(ev){if(ev.key==='Enter')openFiche(e.id)};tb.appendChild(tr)});
+    if(!rows.length){var tr2=el('tr'),c2=el('td','Aucune école ne correspond.','empty');c2.colSpan=8;tr2.appendChild(c2);tb.appendChild(tr2)}
+    $('cnt').textContent=rows.length+' école'+(rows.length>1?'s':'')+' sur '+schools.length;
+    document.querySelectorAll('th[aria-sort]').forEach(function(th){var b=th.querySelector('.sort');th.setAttribute('aria-sort',b&&b.dataset.s===sort.k?(sort.dir>0?'ascending':'descending'):'none')})}
+  document.querySelectorAll('.sort').forEach(function(b){b.onclick=function(){var k=b.dataset.s;sort=sort.k===k?{k:k,dir:-sort.dir}:{k:k,dir:1};drawSchools()}});
+  $('q').oninput=drawSchools;$('fs').onchange=drawSchools;
+  function toggleSchool(e,reopen){
+    confirmBox(e.actif?'Suspendre l’école ?':'Réactiver l’école ?',e.actif?'« '+e.nom+' » : plus personne de cette école ne pourra se connecter. Les données sont conservées et tout redevient normal à la réactivation.':'« '+e.nom+' » : ses utilisateurs pourront de nouveau se connecter.',e.actif?'Suspendre':'Réactiver',e.actif).then(function(ok){if(!ok)return;
+      api('PATCH','plateforme/etablissements/'+e.id+'/',{actif:!e.actif}).then(function(){toast(e.actif?'École suspendue.':'École réactivée.');loadSchools();if(reopen)openFiche(e.id)}).catch(function(x){toast(x.message,true)})})}
+  $('abset').onclick=openAbSettings;
+  $('exp').onclick=function(){
+    var rows=[['Nom','Code','Préfixe','Élèves','Comptes','État','Abonnement','Échéance','Créée le']].concat(schools.map(function(e){return[e.nom,e.code,e.prefixe,e.eleves,e.comptes,e.actif?'Active':'Suspendue',(AB[e.abonnement_etat]||AB.sans_echeance)[0],e.abonnement_fin||'',(e.created||'').slice(0,10)]}));
+    var csv='﻿'+rows.map(function(r){return r.map(function(v){v=String(v);if(/^[=+\-@\t\r]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'}).join(';')}).join('\r\n');
+    var a=el('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='ecoles.csv';document.body.appendChild(a);a.click();a.remove();toast('Liste exportée.')};
+  function slug(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,20)}
+  $('add').onclick=function(){formBox('Ajouter une école',[
+      {h:'École'},
+      {id:'nom',label:'Nom de l’établissement',required:true,max:120,full:true},{id:'code',label:'Code de connexion',required:true,max:20,ph:'ex. horizon',hint:'Saisi par tout le monde à la connexion. Lettres minuscules, chiffres et tirets.'},
+      {id:'pre',label:'Préfixe des matricules',max:4,ph:'ex. HZ',hint:'Les matricules ressembleront à HZ26-0001.'},
+      {id:'ab',label:'Fin de l’abonnement (facultatif)',type:'date',full:true,hint:'Laissez vide pour une école sans échéance.'},
+      {h:'Coordonnées de l’école',note:'Reprises sur les bulletins et les reçus ; l’école pourra les modifier. Seul l’e-mail est obligatoire.'},
+      {id:'ema',label:'E-mail de l’école',type:'email',required:true,full:true,auto:'off',hint:'Adresse de contact de l’école.'},{id:'adr',label:'Adresse (facultatif)',max:200,full:true,auto:'off'},{id:'tel',label:'Téléphone (facultatif)',type:'tel',max:30},
+      {h:'Direction',note:'Le compte du directeur est obligatoire. Chaque personne reçoit un mot de passe provisoire qu’elle change à sa première connexion.'},
+      {id:'dir',label:'Nom du directeur / de la directrice',required:true,full:true},{id:'dme',label:'E-mail de la direction',type:'email',required:true,full:true,hint:'Sert à récupérer le mot de passe oublié.'},
+      {h:'Autres comptes (facultatif)',note:'Pour chaque personne ajoutée, indiquez le nom et l’e-mail. Sans fondateur, c’est la direction qui gère les rôles et les droits ; l’école pourra ensuite créer d’autres rôles et déléguer.'},
+      {id:'fon',label:'Fondateur : nom'},{id:'fme',label:'Fondateur : e-mail',type:'email'},
+      {id:'sec',label:'Secrétariat : nom'},{id:'sme',label:'Secrétariat : e-mail',type:'email'},
+      {id:'inf',label:'Responsable informatique : nom'},{id:'ime',label:'Responsable informatique : e-mail',type:'email',hint:'Gère les comptes du personnel, sans voir les données scolaires.'}],'Créer l’école',
+      function(v){if(!/^[a-z0-9-]+$/.test(v.code))return Promise.reject(new Error('Le code ne contient que des lettres minuscules, chiffres et tirets.'));
+        var body={code:v.code,nom:v.nom,prefixe:v.pre,director:v.dir,director_email:v.dme,founder:v.fon,founder_email:v.fme,secretary:v.sec,secretary_email:v.sme,informatique:v.inf,informatique_email:v.ime,address:v.adr,phone:v.tel,email:v.ema};
+        if(v.ab)body.abonnement_fin=v.ab;
+        return api('POST','plateforme/etablissements/',body).then(function(d){
+          loadSchools();(d.avertissements||[]).forEach(function(w){toast(w)});setTimeout(function(){credBox('École « '+d.nom+' » créée',d.comptes_crees.map(function(c){return{name:c.name+' ('+(ROLE[c.role]||c.role)+')',username:c.username,password:c.password,ecole:d.code,invitation:c.invitation,email:c.email}}))},0)})},
+      function(inp){$('dlg').classList.add('wide');inp.nom.oninput=function(){if(!inp.code.dataset.t)inp.code.value=slug(inp.nom.value)};inp.code.oninput=function(){inp.code.dataset.t='1'}},true)};
+
+  /* ---- fiche école (volet) ---- */
+  var LANGUES=[['fr','Français'],['ar','Arabe'],['en','Anglais'],['es','Espagnol'],['de','Allemand']];
+  /* Ajouter (c = null) ou modifier un cursus : nom, langue du bulletin, nom de l'école dans cette langue */
+  function cursusForm(d,c){formBox(c?'Modifier le cursus':'Ajouter un cursus à '+d.nom,[
+      {id:'nom',label:'Nom du cursus',required:true,value:c?c.nom:'',max:60,ph:'Ex. Cursus arabe',full:true},
+      {id:'langue',label:'Langue du bulletin',options:LANGUES,value:c?c.langue:'ar'},
+      {id:'ne',label:'Nom de l’école dans cette langue (facultatif)',value:c?c.nom_ecole:'',max:120,ph:'Ex. مدرسة الأفق',hint:'Imprimé sur les bulletins de ce cursus. Vide : nom de l’école.'}],
+    c?'Enregistrer':'Ajouter',function(v){var body={nom:v.nom,langue:v.langue,nom_ecole:v.ne};
+      return api(c?'PATCH':'POST','plateforme/etablissements/'+d.id+'/cursus/'+(c?c.id+'/':''),body).then(function(){toast(c?'Cursus modifié.':'Cursus ajouté.');openFiche(d.id)})},
+    function(inp){inp.ne.dir='auto';inp.nom.dir='auto'},true)}
+  function openFiche(id){var d=$('drawer');if(!d.open){d.textContent='';d.appendChild(skel(5));d.showModal()}
+    api('GET','plateforme/etablissements/'+id+'/').then(drawFiche).catch(function(x){d.close();toast(x.message,true)})}
+  /* ---- fiche d'une école : en-tête, chiffres clés, puis onglets Abonnement / Cursus / Direction (l'onglet ouvert est gardé d'une école à l'autre) ---- */
+  var ficheTab='abo';
+  function initials(s){var w=String(s||'').replace(/[^\p{L}\p{N}\s-]/gu,' ').split(/[\s-]+/).filter(function(x){return x.length>1||/\d/.test(x)});return ((w[0]||'?')[0]+((w[1]||'')[0]||'')).toUpperCase()}
+  function drawFiche(d){
+    var f=$('drawer');f.textContent='';f.classList.add('fiche');if(!f.open)f.showModal();
+    var today=payToday(),late=(d.echeancier||[]).filter(function(t){return t.reste>0&&t.echeance<today}),
+      dirAlert=(d.direction||[]).filter(function(u){return u.actif&&(u.must_change_password||u.locked||!u.email)}).length;
+    // en-tête
+    var h=el('header',null,'fh'),av=el('div',initials(d.nom),'fh-av');av.setAttribute('aria-hidden','true');h.appendChild(av);
+    var ht=el('div',null,'fh-t');ht.appendChild(el('h2',d.nom));
+    var meta=el('div',null,'fh-meta');meta.appendChild(document.createTextNode('Code '));meta.appendChild(el('code',d.code));meta.appendChild(document.createTextNode(' · préfixe '+d.prefixe+' · créée le '+dt(d.created).split(' ')[0]));ht.appendChild(meta);
+    var tg=el('div',null,'fh-tags');tg.appendChild(tag(d.actif,'Active','Suspendue'));tg.appendChild(abTag(d));tg.appendChild(el('span',d.multi_cursus?'Plusieurs cursus':'Un seul cursus','tag mute'));ht.appendChild(tg);h.appendChild(ht);
+    var cl=el('button',null,'fh-x');cl.type='button';cl.setAttribute('aria-label','Fermer la fiche');cl.textContent='✕';cl.onclick=function(){f.close()};h.appendChild(cl);f.appendChild(h);
+    var acts=el('div',null,'fh-act');
+    acts.appendChild(btn('Renommer / préfixe',function(){formBox('Modifier l’école',[{id:'nom',label:'Nom',required:true,value:d.nom,max:120,full:true},{id:'pre',label:'Préfixe des matricules',required:true,value:d.prefixe,max:4}],'Enregistrer',function(v){
+      return api('PATCH','plateforme/etablissements/'+d.id+'/',{nom:v.nom,prefixe:v.pre}).then(function(){toast('École modifiée.');loadSchools();openFiche(d.id)})},null,true)}));
+    acts.appendChild(btn(d.actif?'Suspendre l’école':'Réactiver l’école',function(){toggleSchool(d,true)},d.actif?'bad':''));f.appendChild(acts);
+    // chiffres clés
+    var j=d.abonnement_jours,abv=d.abonnement_fin?(j<0?'+'+(-j)+' j':j+' j'):'—',abl=d.abonnement_fin?(j<0?'Échéance dépassée':'Avant l’échéance'):'Sans échéance';
+    var k=el('div',null,'kpis fk');[['stu','Élèves inscrits',d.eleves],['users','Comptes',d.comptes],['log','Direction vue',ago(d.last_direction_login).replace('jamais connectée','jamais'),!d.last_direction_login],
+      [d.abonnement_etat==='actif'||d.abonnement_etat==='sans_echeance'?'ok':'warn',abl,abv,d.abonnement_etat==='grace'||d.abonnement_etat==='echu'||d.abonnement_etat==='bientot']].forEach(function(x){k.appendChild(kpi(x[0],x[1],x[2],x[3]))});f.appendChild(k);
+    var roles=Object.keys(d.roles||{}).filter(function(r){return r&&d.roles[r]});if(roles.length){var rp=el('div',null,'fh-roles');roles.forEach(function(r){var s=el('span',null,'pill');s.appendChild(el('b',String(d.roles[r])));s.appendChild(document.createTextNode(' '+(ROLE[r]||r)));rp.appendChild(s)});f.appendChild(rp)}
+    // onglets
+    var TABS=[['abo','Abonnement',late.length],['cursus','Cursus',0,(d.cursus||[]).length],['dir','Direction',dirAlert,(d.direction||[]).length]];
+    var tb=el('div',null,'ftabs'),panel=el('div',null,'fpanel');tb.setAttribute('role','tablist');tb.setAttribute('aria-label','Rubriques de la fiche');
+    TABS.forEach(function(t){var b=el('button',null,'ftab');b.type='button';b.setAttribute('role','tab');b.id='ft_'+t[0];b.setAttribute('aria-controls','fp');b.appendChild(document.createTextNode(t[1]));
+      if(t[3]!=null)b.appendChild(el('span',String(t[3]),'cnt'));if(t[2])b.appendChild(el('span',String(t[2]),'alert'));b.onclick=function(){ficheTab=t[0];show()};
+      b.onkeydown=function(e){var i=TABS.findIndex(function(x){return x[0]===ficheTab})+(e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0);if(i!==TABS.findIndex(function(x){return x[0]===ficheTab})){ficheTab=TABS[(i+TABS.length)%TABS.length][0];show();$('ft_'+ficheTab).focus()}};tb.appendChild(b)});
+    panel.id='fp';panel.setAttribute('role','tabpanel');f.appendChild(tb);f.appendChild(panel);
+    function show(){[].forEach.call(tb.children,function(b){var on=b.id==='ft_'+ficheTab;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1});
+      panel.setAttribute('aria-labelledby','ft_'+ficheTab);panel.textContent='';panel.classList.remove('in');void panel.offsetWidth;panel.classList.add('in');
+      (ficheTab==='abo'?paneAbo:ficheTab==='cursus'?paneCursus:paneDir)(panel)}
+    function paneAbo(p){
+      var per=null;(d.echeancier||[]).forEach(function(t){if(!per||t.periode_fin>per)per=t.periode_fin});
+      var cur=(d.echeancier||[]).filter(function(t){return t.periode_fin===per}),tot=cur.reduce(function(s,t){return s+t.montant},0),reg=cur.reduce(function(s,t){return s+t.regle},0),
+        next=(d.echeancier||[]).filter(function(t){return t.reste>0})[0];
+      var c=el('section',null,'abo-card'),l=el('div',null,'abo-l');
+      l.appendChild(el('span',d.abonnement_fin?'Accès complet jusqu’au':'Accès','abo-k'));l.appendChild(el('b',d.abonnement_fin?dFr(d.abonnement_fin):'Sans échéance','abo-v'));
+      if(d.abonnement_fin)l.appendChild(el('span',j<0?'Échéance dépassée de '+(-j)+' jour'+(j<-1?'s':''):j===0?'Échéance aujourd’hui':j+' jour'+(j>1?'s':'')+' restant'+(j>1?'s':''),'abo-s'+(j<0?' bad':j<=(+d.rappel_jours||30)?' warn':'')));
+      if(tot){var bar=el('div',null,'pbar'),fill=el('i');bar.setAttribute('role','progressbar');bar.setAttribute('aria-valuemin','0');bar.setAttribute('aria-valuemax',String(tot));bar.setAttribute('aria-valuenow',String(reg));
+        bar.setAttribute('aria-label','Montant réglé sur l’année');bar.appendChild(fill);l.appendChild(bar);requestAnimationFrame(function(){fill.style.width=Math.round(reg*100/tot)+'%'});
+        l.appendChild(el('span',fcfa(reg)+' réglés sur '+fcfa(tot)+(per?' · année jusqu’au '+dFr(per):''),'small mut'))}
+      if(next)l.appendChild(el('div','Prochaine tranche : '+NAT[next.nature]+' '+next.numero+'/'+next.nombre+' — '+fcfa(next.reste)+' le '+dFr(next.echeance),'abo-next'+(next.echeance<today?' bad':'')));
+      c.appendChild(l);var r=el('div',null,'abo-r'),pay=el('button','Enregistrer un paiement','p');pay.type='button';pay.onclick=function(){openPay(d)};r.appendChild(pay);
+      var ec=el('button','Modifier l’échéance');ec.type='button';ec.onclick=function(){openEcheance(d)};r.appendChild(ec);c.appendChild(r);p.appendChild(c);
+      if(!(d.echeancier||[]).length&&!(d.paiements||[]).length){var em=el('div',null,'empty-box');em.appendChild(el('b','Aucun paiement pour l’instant'));em.appendChild(el('span','Enregistrez le premier paiement : vous choisirez l’inscription en une fois ou par tranches.'));p.appendChild(em);return}
+      if((d.echeancier||[]).length){var et=el('section',null,'ech-fiche'),hd=el('div',null,'hd');hd.appendChild(el('b','Échéancier'));hd.appendChild(el('span',d.reste_du?'Reste dû : '+fcfa(d.reste_du):'Soldé'));et.appendChild(hd);
+        d.echeancier.forEach(function(t){var lt=t.reste>0&&t.echeance<today,row=el('div',null,'row'+(lt?' late':t.reste?'':' paid'));
+          row.appendChild(el('span',NAT[t.nature]+' '+t.numero+'/'+t.nombre));row.appendChild(el('span',dFr(t.echeance)));row.appendChild(el('span',fcfa(t.montant)));
+          row.appendChild(el('span',!t.reste?'Réglée':lt?'En retard':t.regle?'Partielle':'À venir','st-chip '+(!t.reste?'ok':lt?'bad':t.regle?'part':'todo')));
+          row.appendChild(t.reste?btn('Modifier',function(){openTranche(d,t)}):el('span'));et.appendChild(row)});p.appendChild(et)}
+      if((d.paiements||[]).length){var pt=el('section',null,'pay-hist'),ph=el('div',null,'hd');ph.appendChild(el('b','Paiements'));ph.appendChild(el('span',d.paiements.length+' enregistré'+(d.paiements.length>1?'s':'')));pt.appendChild(ph);
+        d.paiements.forEach(function(x){var m=(MODES.filter(function(y){return y[0]===x.mode})[0]||[0,x.mode])[1],row=el('div',null,'row'),t=el('div');
+          var l1=el('div');l1.appendChild(el('b',fcfa(x.montant)));l1.appendChild(document.createTextNode(' · '+dFr(x.date)+(x.numero?' · reçu '+x.numero:'')));t.appendChild(l1);
+          t.appendChild(el('div',m+(x.reference?' · N° '+x.reference:'')+(x.fin_apres?' · accès jusqu’au '+dFr(x.fin_apres):'')+(x.par?' · par '+x.par:''),'small mut'));row.appendChild(t);
+          if(x.numero)row.appendChild(btn('Reçu',function(){openRecu(x.id,true)}));pt.appendChild(row)});p.appendChild(pt)}}
+    function paneCursus(p){
+      p.appendChild(el('p','Une école franco-arabe (ou autre) a plusieurs cursus, chacun avec ses niveaux, classes, notes et bulletins. Ajoutez un cursus à la demande de l’école ; un cursus vide peut être retiré.','small mut'));
+      var g=el('div',null,'fcards');(d.cursus||[]).forEach(function(c){var r=el('div',null,'fcard'),top=el('div',null,'fcard-h');top.appendChild(el('b',c.nom));top.appendChild(el('span',c.donnees?c.donnees+' donnée(s)':'Vide','tag'+(c.donnees?'':' mute')));r.appendChild(top);
+        r.appendChild(el('div','Bulletin en '+c.langue_label.toLowerCase()+(c.nom_ecole?' · '+c.nom_ecole:''),'small mut'));var a=el('div',null,'actions');a.appendChild(btn('Modifier',function(){cursusForm(d,c)}));
+        if(d.cursus.length>1&&!c.donnees)a.appendChild(btn('Retirer',function(){confirmBox('Retirer ce cursus ?','Le cursus « '+c.nom+' » sera retiré de '+d.nom+'. Il ne contient aucune donnée.','Retirer',true).then(function(ok){if(!ok)return;
+          api('POST','plateforme/etablissements/'+d.id+'/cursus/'+c.id+'/retirer/').then(function(){toast('Cursus retiré.');openFiche(d.id)}).catch(function(x){toast(x.message,true)})})},'danger'));
+        r.appendChild(a);g.appendChild(r)});
+      var add=el('button',null,'fcard add');add.type='button';add.appendChild(icon('plus'));add.appendChild(el('span','Ajouter un cursus'));add.onclick=function(){cursusForm(d,null)};g.appendChild(add);p.appendChild(g)}
+    function paneDir(p){
+      if(!(d.direction||[]).length){p.appendChild(el('p','Aucun compte de direction.','empty'));return}
+      d.direction.forEach(function(u){var c=el('div',null,'dir'+(u.actif?'':' off')),hh=el('div',null,'dir-h'),a0=el('div',initials(u.name),'dir-av');a0.setAttribute('aria-hidden','true');hh.appendChild(a0);
+        var l=el('div',null,'dir-t');l.appendChild(el('b',u.name));var m=el('div',null,'small mut');m.appendChild(document.createTextNode((ROLE[u.role]||u.role)+' · identifiant '));m.appendChild(el('code',u.username));l.appendChild(m);hh.appendChild(l);
+        var s=el('div',null,'fh-tags');s.appendChild(tag(u.actif,'Actif','Désactivé'));if(u.must_change_password)s.appendChild(el('span','Mot de passe provisoire','tag warn'));if(u.locked)s.appendChild(el('span','Verrouillé','tag bad'));if(!u.email)s.appendChild(el('span','Sans e-mail','tag warn'));hh.appendChild(s);c.appendChild(hh);
+        var info=el('dl',null,'dir-i');[['E-mail',u.email||'À renseigner (mot de passe oublié impossible)'],['Dernière connexion',u.last_login?dt(u.last_login)+' ('+ago(u.last_login)+')':'Jamais']].forEach(function(x){info.appendChild(el('dt',x[0]));info.appendChild(el('dd',x[1]))});c.appendChild(info);
+        var a=el('div',null,'actions');
+        a.appendChild(btn('Nouveau mot de passe',function(){confirmBox('Nouveau mot de passe ?','Un mot de passe provisoire sera généré pour '+u.name+'. Ses sessions ouvertes seront coupées et il devra le changer à la prochaine connexion.','Générer').then(function(ok){if(!ok)return;
+          api('POST','plateforme/etablissements/'+d.id+'/comptes/'+u.id+'/reinitialiser/').then(function(r){openFiche(d.id);credBox('Nouveau mot de passe',[Object.assign({invitation:r.invitation,email:r.email},r.credentials)])}).catch(function(x){toast(x.message,true)})})}));
+        a.appendChild(btn('Modifier l’e-mail',function(){formBox('E-mail de '+u.name,[{id:'email',label:'Adresse e-mail',type:'email',value:u.email,required:true,auto:'email'}],'Enregistrer',function(v){
+          return api('PATCH','plateforme/etablissements/'+d.id+'/comptes/'+u.id+'/',{email:v.email}).then(function(r){toast('E-mail enregistré.');drawFiche(r)})})}));
+        a.appendChild(btn(u.actif?'Désactiver':'Réactiver',function(){var go=function(){api('POST','plateforme/etablissements/'+d.id+'/comptes/'+u.id+'/basculer/').then(function(r){toast(u.actif?'Compte désactivé.':'Compte réactivé.');drawFiche(r)}).catch(function(x){toast(x.message,true)})};
+          if(u.actif)confirmBox('Désactiver ce compte ?',u.name+' ne pourra plus se connecter. Le compte n’est pas supprimé.','Désactiver',true).then(function(ok){if(ok)go()});else go()},u.actif?'bad':''));
+        c.appendChild(a);p.appendChild(c)})}
+    show();f.scrollTop=0}
+
+  /* ---- page d'accueil publique : commune à toutes les écoles ---- */
+  function shrink(file,max,type){return new Promise(function(ok,ko){var u=URL.createObjectURL(file),i=new Image();
+    i.onload=function(){URL.revokeObjectURL(u);var k=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(i.width*k));c.height=Math.max(1,Math.round(i.height*k));
+      c.getContext('2d').drawImage(i,0,0,c.width,c.height);if(type==='data'){ok(c.toDataURL('image/png'));return}c.toBlob(function(b){if(b)ok(b);else ko(new Error('Image illisible.'))},'image/jpeg',.85)};
+    i.onerror=function(){URL.revokeObjectURL(u);ko(new Error('Image illisible.'))};i.src=u})}
+  function okImg(file){if(!/^image\/(png|jpe?g|webp)$/.test(file.type)){toast('Format non pris en charge : utilisez JPG, PNG ou WebP.',true);return false}if(file.size>20*1024*1024){toast('Image trop lourde (20 Mo maximum).',true);return false}return true}
+  function filePick(onFile){var fi=el('input');fi.type='file';fi.accept='image/jpeg,image/png,image/webp';fi.hidden=true;fi.onchange=function(){var f=fi.files&&fi.files[0];fi.value='';if(f&&okImg(f))onFile(f)};return fi}
+  function loadAccueil(){var a=$('accid'),b=$('accph');a.textContent='';b.textContent='';a.appendChild(skel(2));b.appendChild(skel(2));
+    api('GET','plateforme/accueil/').then(drawAccueil).catch(function(x){a.textContent=x.message;b.textContent=''})}
+  function drawAccueil(v){var U='plateforme/accueil/',a=$('accid'),b=$('accph');a.textContent='';b.textContent='';
+    // Identité affichée en haut de la page
+    a.appendChild(el('h2','Identité'));a.appendChild(el('p','Le nom et le logo en haut de la page d’accueil, communs à toutes les écoles. Nom vide : « Plateforme scolaire » (ou le nom de l’école si la plateforme n’en héberge qu’une).','mut small'));
+    var row=el('div');row.style.cssText='display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:10px 0';var lg;
+    if(v.logo){lg=el('img');lg.src=v.logo;lg.alt='Logo actuel';lg.style.cssText='width:72px;height:72px;object-fit:contain;border-radius:12px;border:1px solid var(--line);background:#fff'}else{lg=el('span','Aucun logo','mut small');lg.style.cssText='width:72px;height:72px;display:grid;place-items:center;text-align:center;border:1px dashed var(--line);border-radius:12px'}
+    row.appendChild(lg);var la=el('div',null,'actions');var lfi=filePick(function(f){shrink(f,320,'data').then(function(url){return api('PATCH',U,{logo:url})}).then(function(r){toast('Logo enregistré.');drawAccueil(r)}).catch(function(x){toast(x.message,true)})});
+    la.appendChild(btn('Choisir un logo',function(){lfi.click()}));la.appendChild(lfi);if(v.logo)la.appendChild(btn('Retirer le logo',function(){api('PATCH',U,{logo:''}).then(function(r){toast('Logo retiré.');drawAccueil(r)}).catch(function(x){toast(x.message,true)})}));row.appendChild(la);a.appendChild(row);
+    var nm=field('Nom affiché','accnom','text',v.nom,'off',120);nm.querySelector('input').placeholder='Plateforme scolaire';a.appendChild(nm);
+    var sv=btn('Enregistrer le nom',function(){api('PATCH',U,{nom:$('accnom').value}).then(function(r){toast('Nom enregistré.');drawAccueil(r)}).catch(function(x){toast(x.message,true)})},'p');sv.style.marginTop='10px';a.appendChild(sv);
+    // Diaporama
+    b.appendChild(el('h2','Photos du diaporama'));
+    b.appendChild(el('p','Elles défilent en fond de la bannière de la page d’accueil, sous un voile qui garde le texte lisible ('+v.max+' au plus, en largeur et de bonne qualité). Elles sont réduites automatiquement et leurs données cachées (lieu GPS, appareil) sont retirées.','mut small'));
+    b.appendChild(el('p','Cette page est visible par tout le monde : pas de photo où des élèves sont reconnaissables sans l’accord de leurs parents.','small warnline'));
+    v.photos.forEach(function(p,i){var r=el('div',null,'vph'),im=el('img');im.src=p.url;im.alt='';r.appendChild(im);var col=el('div');col.style.cssText='flex:1;min-width:0';
+      var lab=el('label','Légende (facultative)'),inp=el('input');inp.id='vc'+p.id;lab.htmlFor=inp.id;inp.value=p.caption;inp.maxLength=120;inp.placeholder='Ex. : la cour de récréation';
+      inp.onchange=function(){api('PATCH',U+p.id+'/',{caption:inp.value}).then(function(){toast('Légende enregistrée.')}).catch(function(x){toast(x.message,true)})};
+      col.appendChild(lab);col.appendChild(inp);var ac=el('div',null,'actions');ac.style.marginTop='6px';
+      var mv=function(dir){var ids=v.photos.map(function(x){return x.id}),j=i+dir;ids[i]=ids[j];ids[j]=p.id;api('PATCH',U,{order:ids}).then(drawAccueil).catch(function(x){toast(x.message,true)})};
+      var up=btn('↑ Avant',function(){mv(-1)}),dn=btn('↓ Après',function(){mv(1)});up.disabled=i===0;dn.disabled=i===v.photos.length-1;
+      up.setAttribute('aria-label','Avancer la photo '+(i+1));dn.setAttribute('aria-label','Reculer la photo '+(i+1));ac.appendChild(up);ac.appendChild(dn);
+      var rm=btn('Retirer',function(){confirmBox('Retirer cette photo ?','Elle disparaît de la page d’accueil.','Retirer',true).then(function(ok){if(ok)api('DELETE',U+p.id+'/').then(function(){toast('Photo retirée.');loadAccueil()}).catch(function(x){toast(x.message,true)})})},'danger');
+      rm.setAttribute('aria-label','Retirer la photo '+(i+1));ac.appendChild(rm);col.appendChild(ac);r.appendChild(col);b.appendChild(r)});
+    if(!v.photos.length)b.appendChild(el('p','Aucune photo : la bannière garde son fond uni.','mut small'));
+    var bar=el('div',null,'actions');bar.style.cssText='margin-top:10px;align-items:center';
+    var add=btn('Ajouter une photo',function(){pfi.click()},'p');add.disabled=v.photos.length>=v.max;
+    var pfi=filePick(function(f){busy(add,true,'Envoi…');shrink(f,1920).then(function(bl){var fd=new FormData();fd.append('photo',bl,'photo.jpg');return api('POST',U,fd)}).then(function(){toast('Photo ajoutée à la page d’accueil.');loadAccueil()}).catch(function(x){busy(add,false);toast(x.message,true)})});
+    bar.appendChild(add);bar.appendChild(pfi);bar.appendChild(el('span',v.photos.length+' / '+v.max,'mut small'));b.appendChild(bar);
+    var ck=el('label');ck.style.cssText='display:flex;gap:8px;align-items:center;margin-top:14px;font-weight:400';var cb=el('input');cb.type='checkbox';cb.checked=v.carte;cb.style.width='auto';
+    cb.onchange=function(){api('PATCH',U,{carte:cb.checked}).then(function(r){toast(r.carte?'Bulletin d’exemple affiché.':'Bulletin d’exemple masqué.')}).catch(function(x){cb.checked=!cb.checked;toast(x.message,true)})};
+    ck.appendChild(cb);ck.appendChild(document.createTextNode('Montrer le bulletin d’exemple (données fictives) dans la bannière de la page d’accueil'));b.appendChild(ck);
+    drawPromo(v);loadDemos()}
+
+  /* Sous-onglets de « Page d’accueil » : un réglage par thème, le dernier ouvert est retenu */
+  var ACC_KEY='pf.accueil.onglet';
+  function accTab(k,focus){var bs=document.querySelectorAll('#t-accueil [data-st]');if(![].some.call(bs,function(b){return b.dataset.st===k}))k='identite';
+    bs.forEach(function(b){var on=b.dataset.st===k;b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1;if(on&&focus)b.focus()});
+    document.querySelectorAll('#t-accueil [data-sp]').forEach(function(p){p.hidden=p.dataset.sp!==k});
+    document.querySelectorAll('#accsub [data-st2]').forEach(function(b){if(b.dataset.st2===k)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current')});
+    try{localStorage.setItem(ACC_KEY,k)}catch(e){}}
+  // Ordinateur : les sous-sections s'ouvrent depuis le menu latéral, sous « Page d’accueil » (téléphone : sous-onglets en haut)
+  document.querySelectorAll('#accsub [data-st2]').forEach(function(b){b.onclick=function(){if(curTab!=='accueil')tab('accueil');accTab(b.dataset.st2);scrollTo(0,0)}});
+  // Sous-menu repliable : un clic sur « Page d’accueil » déjà ouverte le replie ou le déplie (choix retenu)
+  var SUB_KEY='pf.accueil.sousmenu',subOpen=true;try{subOpen=localStorage.getItem(SUB_KEY)!=='0'}catch(e){}
+  function accSub(){var on=curTab==='accueil',b=document.querySelector('#app>nav [data-t=accueil]');$('accsub').hidden=!(on&&subOpen);
+    if(b){b.setAttribute('aria-controls','accsub');b.setAttribute('aria-expanded',on&&subOpen?'true':'false');b.title=on?(subOpen?'Replier le sous-menu':'Déplier le sous-menu'):''}}
+  (function(){var b=document.querySelector('#app>nav [data-t=accueil]');if(!b)return;
+    b.onclick=function(){if(curTab==='accueil'){subOpen=!subOpen;try{localStorage.setItem(SUB_KEY,subOpen?'1':'0')}catch(e){}accSub()}else tab('accueil')};accSub()})();
+  (function(){var bs=[].slice.call(document.querySelectorAll('#t-accueil [data-st]'));
+    bs.forEach(function(b,i){b.onclick=function(){accTab(b.dataset.st)};
+      b.onkeydown=function(e){var j=e.key==='ArrowRight'?i+1:e.key==='ArrowLeft'?i-1:e.key==='Home'?0:e.key==='End'?bs.length-1:-2;
+        if(j===-2)return;e.preventDefault();accTab(bs[(j+bs.length)%bs.length].dataset.st,true)}});
+    var k='identite';try{k=localStorage.getItem(ACC_KEY)||k}catch(e){}accTab(k)})();
+
+  /* ---- promotion de la plateforme : coordonnées, prix, chiffres affichés ---- */
+  function checkRow(text,on,marginTop,save){var lb=el('label');lb.style.cssText='display:flex;gap:8px;align-items:center;margin-top:'+marginTop+'px;font-weight:400';
+    var cb=el('input');cb.type='checkbox';cb.checked=!!on;cb.style.width='auto';cb.onchange=function(){save(cb)};lb.appendChild(cb);lb.appendChild(document.createTextNode(text));return lb}
+  function drawPromo(v){var U='plateforme/accueil/',c=$('acccontact'),k=v.contact||{};c.textContent='';
+    c.appendChild(el('h2','Contact et réception des demandes'));
+    c.appendChild(el('h3','Coordonnées affichées aux écoles'));
+    c.appendChild(el('p','Affichées à côté du tarif (« Tarif sur demande » ou le prix), dans le formulaire de démonstration et en bas de la page d’accueil. Un champ vide n’est pas affiché.','mut small'));
+    var g=el('div',null,'g2');g.appendChild(field('Numéro WhatsApp','accwa','tel',k.whatsapp,'off',30));g.appendChild(field('Téléphone','acctel','tel',k.telephone,'off',30));
+    var em=field('E-mail de contact','accmail','email',k.email,'off',254);em.className='full';g.appendChild(em);c.appendChild(g);
+    $('accwa').placeholder='+225 07 00 00 00 00';
+    var sv=btn('Enregistrer les coordonnées',function(){api('PATCH',U,{whatsapp:$('accwa').value,telephone:$('acctel').value,email:$('accmail').value}).then(function(r){toast('Coordonnées enregistrées.');drawAccueil(r)}).catch(function(x){toast(x.message,true)})},'p');
+    sv.style.marginTop='10px';c.appendChild(sv);
+    // Réception des demandes : adresse privée, jamais affichée sur la page
+    var rc=el('div');rc.style.cssText='margin-top:22px;padding-top:18px;border-top:1px solid var(--line)';c.appendChild(rc);
+    rc.appendChild(el('h3','Réception des demandes de démonstration'));
+    rc.appendChild(el('p','Chaque demande envoyée par une école depuis la page d’accueil est envoyée à cette adresse, en plus de la liste « Demandes de démo ». Elle n’est jamais affichée sur la page. Vide : l’e-mail de contact ci-dessus.','mut small'));
+    var rm=field('E-mail qui reçoit les demandes','accrecv','email',v.email_demandes||'','off',254);rm.className='full';rc.appendChild(rm);
+    $('accrecv').placeholder=k.email||'Ex. : demandes@votre-domaine.ci';
+    var dest=k.email||'';if(v.email_demandes)dest=v.email_demandes;
+    rc.appendChild(el('p',dest?'Les demandes sont envoyées à : '+dest+'.':'Aucune adresse : les demandes ne sont visibles que dans « Demandes de démo ».','small '+(dest?'mut':'warnline')));
+    var sr=btn('Enregistrer l’adresse de réception',function(){api('PATCH',U,{email_demandes:$('accrecv').value}).then(function(r){toast('Adresse de réception enregistrée.');drawAccueil(r)}).catch(function(x){toast(x.message,true)})},'p');
+    sr.style.marginTop='10px';rc.appendChild(sr);
+    // Tarif
+    var t=$('acctarif');t.textContent='';t.appendChild(el('h2','Tarif'));
+    t.appendChild(el('p','Le prix de l’abonnement apparaît dans la partie « Vous dirigez une école ? ». La page affiche le tarif d’une école à un seul cursus : l’inscription, puis le renouvellement par an.','mut small'));
+    t.appendChild(checkRow('Afficher le prix de l’abonnement (sinon : « Tarif sur demande »)',v.prix_affiche,12,function(cb){
+      api('PATCH',U,{prix:cb.checked}).then(function(r){toast(r.prix_affiche?'Prix affiché sur la page d’accueil.':'La page d’accueil indique « Tarif sur demande ».');drawAccueil(r)}).catch(function(x){cb.checked=!cb.checked;toast(x.message,true)})}));
+    var ab=btn('Régler les tarifs',openAbSettings);ab.style.marginTop='14px';t.appendChild(ab);
+    t.appendChild(el('p','Ce réglage est le même que le bouton « Abonnement » de l’onglet Écoles : il sert aussi aux échéanciers des écoles.','mut small'));
+    // Coordonnées affichées sous le tarif : modifiables dans « Contact »
+    var tc=el('div');tc.style.cssText='margin-top:22px;padding-top:18px;border-top:1px solid var(--line)';t.appendChild(tc);
+    tc.appendChild(el('h3','Coordonnées affichées sous le tarif'));
+    var shown=[k.whatsapp&&'WhatsApp : '+k.whatsapp,k.telephone&&'Téléphone : '+k.telephone,k.email&&'E-mail : '+k.email].filter(Boolean);
+    tc.appendChild(el('p',shown.length?shown.join(' · '):'Aucune coordonnée : les écoles ne peuvent vous joindre que par le formulaire de démonstration.','small '+(shown.length?'':'warnline')));
+    var mc=btn('Modifier les coordonnées',function(){accTab('contact');scrollTo(0,0)});mc.style.marginTop='10px';tc.appendChild(mc);
+    // Chiffres affichés
+    var f=$('accchif');f.textContent='';f.appendChild(el('h2','Chiffres affichés'));
+    f.appendChild(el('p','La section « La plateforme en chiffres » de la page d’accueil. Décochez tout pour la masquer.','mut small'));
+    f.appendChild(checkRow('Afficher les chiffres de la plateforme (écoles, élèves suivis, comptes connectés ce mois-ci, paiements)',v.chiffres_affiches,12,function(cb){
+      api('PATCH',U,{chiffres:cb.checked}).then(function(r){toast(r.chiffres_affiches?'Chiffres affichés sur la page d’accueil.':'Chiffres masqués.');drawAccueil(r)}).catch(function(x){cb.checked=!cb.checked;toast(x.message,true)})}));
+    f.appendChild(checkRow('Afficher la fréquentation de la page d’accueil (visiteurs aujourd’hui, sur 30 jours, depuis le lancement)',v.visiteurs_affiches,10,function(cb){
+      api('PATCH',U,{visiteurs:cb.checked}).then(function(r){toast(r.visiteurs_affiches?'Fréquentation affichée sur la page d’accueil.':'Fréquentation masquée.');drawAccueil(r)}).catch(function(x){cb.checked=!cb.checked;toast(x.message,true)})}));
+    var cf=v.chiffres;f.appendChild(el('p',cf?'Aujourd’hui : '+cf.ecoles+' école(s), '+cf.eleves+' élève(s), '+cf.connectes+' compte(s) connecté(s) ce mois-ci, '+cf.paiements+' paiement(s). Mis à jour toutes les 10 minutes ; un total nul n’est pas affiché.':'Les chiffres ne sont pas affichés sur la page d’accueil.','mut small'))}
+  function loadDemos(){var c=$('accdemos');c.textContent='';c.appendChild(skel(2));
+    api('GET','plateforme/demandes/').then(drawDemos).catch(function(x){c.textContent=x.message})}
+  function drawDemos(rows){var c=$('accdemos');c.textContent='';var todo=rows.filter(function(r){return !r.traitee}).length;
+    ['demcnt','demcnt2'].forEach(function(i){var cnt=$(i);cnt.textContent=todo;cnt.hidden=!todo;cnt.setAttribute('aria-label',todo+' à traiter')});
+    c.appendChild(el('h2','Demandes de démonstration'+(todo?' ('+todo+' à traiter)':'')));
+    c.appendChild(el('p','Envoyées par les écoles intéressées depuis la page d’accueil. Rappelez-les, puis marquez la demande comme traitée.','mut small'));
+    if(!rows.length){c.appendChild(el('p','Aucune demande pour le moment.','mut small'));return}
+    rows.forEach(function(d){var r=el('div',null,'acc'),h=el('div',null,'h'),l=el('div');l.appendChild(el('b',d.ecole));
+      l.appendChild(el('span',' · '+d.nom+(d.ville?' · '+d.ville:''),'mut small'));h.appendChild(l);
+      var a=el('div',null,'actions');a.appendChild(d.traitee?el('span','Traitée','tag'):el('span','À traiter','tag warn'));
+      a.appendChild(btn(d.traitee?'Remettre à traiter':'Marquer traitée',function(){api('PATCH','plateforme/demandes/'+d.id+'/',{traitee:!d.traitee}).then(function(){loadDemos()}).catch(function(x){toast(x.message,true)})}));
+      h.appendChild(a);r.appendChild(h);
+      var m=el('div',null,'small');m.style.margin='6px 0 0';var tl=el('a',d.telephone);tl.href='tel:'+d.telephone.replace(/[^\d+]/g,'');m.appendChild(tl);
+      var wa=d.telephone.replace(/\D/g,'');if(wa){m.appendChild(document.createTextNode(' · '));var w=el('a','WhatsApp');w.href='https://wa.me/'+wa;w.target='_blank';w.rel='noopener';m.appendChild(w)}
+      if(d.email){m.appendChild(document.createTextNode(' · '));var e=el('a',d.email);e.href='mailto:'+d.email;m.appendChild(e)}
+      m.appendChild(document.createTextNode(' · reçue le '+dt(d.created)));r.appendChild(m);
+      if(d.message){var q=el('p',d.message,'small');q.style.margin='6px 0 0';r.appendChild(q)}
+      c.appendChild(r)})}
+
+  /* ---- administrateurs ---- */
+  function initials(n){return (n||'?').trim().split(/\s+/).slice(0,2).map(function(w){return w[0]}).join('').toUpperCase()}
+  function avatar(u,size){var i;function fall(){var t=el('span',initials(u.name),'av');t.style.width=t.style.height=size+'px';t.style.fontSize=Math.round(size/2.5)+'px';return t}if(u.photo){i=el('img');i.src=u.photo;i.alt='';i.className='av';i.style.width=i.style.height=size+'px';i.onerror=function(){if(i.parentNode)i.parentNode.replaceChild(fall(),i)}}else i=fall();return i}
+  var mine=null;
+  function setWho(u){mine=u;me.name=u.name;$('who').textContent='Connecté : '+u.name+(u.owner?' (administrateur principal)':'');var b=$('mep');b.textContent='';b.appendChild(avatar(u,28));b.appendChild(el('span',u.name.split(' ')[0]));b.hidden=false}
+  $('mep').onclick=function(){tab('profil')};
+  function credAdmin(r,title){setTimeout(function(){credBox(title,[Object.assign({invitation:r.invitation,email:r.email},r.credentials)])},0)}
+  function loadAdmins(){$('ae').textContent='';var c=$('acards');c.textContent='';c.appendChild(skel(3));api('GET','plateforme/administrateurs/').then(function(r){c.textContent='';
+    var my=r.filter(function(u){return u.is_me})[0],owner=!!(my&&my.owner);if(my)setWho(my);
+    $('addadm').lastChild.textContent=owner?'Ajouter un administrateur':'Inviter un administrateur';
+    $('aintro').textContent=owner?'Vous êtes l’administrateur principal : vous validez les invitations et vous gérez les autres comptes.':'Vous pouvez inviter un administrateur ; l’administrateur principal doit le valider avant qu’il puisse se connecter.';
+    r.forEach(function(u){var x=el('div',null,'acc'),h=el('div',null,'h'),who=el('div',null,'prof');who.style.gap='10px';who.appendChild(avatar(u,44));var nm=el('div');nm.appendChild(el('b',u.name));nm.appendChild(el('div','@'+u.username,'small mut'));who.appendChild(nm);h.appendChild(who);
+      var s=el('div',null,'actions');if(u.owner)s.appendChild(el('span','Principal','tag main'));if(u.pending)s.appendChild(el('span','À valider','tag warn'));else s.appendChild(tag(u.actif,'Actif','Désactivé'));if(u.is_me)s.appendChild(el('span','vous','tag ok2'));if(u.must_change_password&&!u.pending)s.appendChild(el('span','provisoire','tag warn'));s.appendChild(el('span',u.twofa?'2FA active':'sans 2FA','tag'+(u.twofa?' ok2':' mute')));h.appendChild(s);x.appendChild(h);
+      var m=el('div','E-mail : '+(u.email||'—'),'small mut');m.style.marginTop='6px';x.appendChild(m);if(u.phone)x.appendChild(el('div','Téléphone : '+u.phone,'small mut'));
+      x.appendChild(el('div',u.pending?'Proposé par '+(u.invited_by||'—'):'Dernière connexion : '+dt(u.last_login),'small mut'));
+      if(owner&&!u.is_me&&!u.owner){var a=el('div',null,'actions');a.style.marginTop='8px';var act=function(path,ok,after){return api('POST','plateforme/administrateurs/'+u.id+'/'+path+'/').then(function(r){if(ok)toast(ok);loadAdmins();if(after)after(r)}).catch(function(e){toast(e.message,true)})};
+        if(u.pending){a.appendChild(btn('Valider',function(){act('valider','Compte validé.',function(r){credAdmin(r,'Administrateur validé')})},'p'));a.appendChild(btn('Refuser',function(){confirmBox('Refuser l’invitation','L’invitation de '+u.name+' sera supprimée.','Refuser',true).then(function(y){if(y)act('refuser','Invitation refusée.')})},'bad'))}
+        else{a.appendChild(btn(u.actif?'Désactiver':'Réactiver',function(){var go=function(){act('basculer',u.actif?'Compte désactivé.':'Compte réactivé.')};if(u.actif)confirmBox('Désactiver '+u.name,'Cette personne ne pourra plus se connecter. Vous pourrez réactiver le compte.','Désactiver',true).then(function(y){if(y)go()});else go()},u.actif?'bad':''));
+          a.appendChild(btn('Nouveau mot de passe',function(){confirmBox('Nouveau mot de passe','Un mot de passe provisoire sera créé pour '+u.name+'. L’ancien ne fonctionnera plus.','Continuer').then(function(y){if(y)act('reinitialiser',null,function(r){credAdmin(r,'Nouveau mot de passe')})})}));
+          if(u.twofa)a.appendChild(btn('Retirer la 2FA',function(){confirmBox('Retirer la double authentification','À faire seulement si '+u.name+' a perdu son téléphone et ses codes de secours.','Retirer',true).then(function(y){if(y)act('retirer-2fa','Double authentification retirée.')})}))}
+        x.appendChild(a)}
+      c.appendChild(x)})}).catch(function(x){c.textContent='';$('ae').textContent=x.message})}
+  $('addadm').onclick=function(){var owner=mine&&mine.owner;formBox(owner?'Ajouter un administrateur':'Inviter un administrateur',[{id:'name',label:'Nom complet',required:true,full:true,auto:'name'},{id:'username',label:'Identifiant',required:true,ph:'ex. awa'},{id:'email',label:'E-mail (obligatoire)',type:'email',required:true,auto:'email'}],owner?'Créer le compte':'Envoyer l’invitation',function(v){
+      return api('POST','plateforme/administrateurs/',{name:v.name,username:v.username,email:v.email}).then(function(r){loadAdmins();if(r.pending)toast('Invitation envoyée : l’administrateur principal doit la valider.');else setTimeout(function(){credBox('Administrateur créé',[Object.assign({invitation:r.invitation,email:r.email},r.credentials)])},0)})},null,true)};
+
+  /* ---- mon profil ---- */
+  function field(label,id,type,val,auto,max){var w=el('div'),l=el('label',label),i=el('input');l.htmlFor=id;i.id=id;i.type=type||'text';i.value=val||'';i.autocomplete=auto||'off';if(max)i.maxLength=max;w.appendChild(l);w.appendChild(i);return w}
+  function loadProfil(){var c=$('pcard');c.textContent='';c.appendChild(skel(3));api('GET','plateforme/administrateurs/').then(function(r){var u=r.filter(function(x){return x.is_me})[0];if(u){setWho(u);drawProfil(u)}}).catch(function(x){c.textContent=x.message})}
+  function drawProfil(u){var c=$('pcard');c.textContent='';
+    var top=el('div',null,'prof');top.appendChild(avatar(u,96));var id=el('div');id.appendChild(el('h2',u.name));
+    var t=el('div',null,'actions');t.style.marginTop='6px';t.appendChild(el('span',u.owner?'Administrateur principal':'Administrateur de la plateforme','tag'+(u.owner?' main':' ok2')));t.appendChild(el('span',u.twofa?'Double authentification active':'Double authentification inactive','tag'+(u.twofa?' ok2':' warn')));id.appendChild(t);
+    var pb=el('div',null,'actions');pb.style.marginTop='10px';var fi=el('input');fi.type='file';fi.accept='image/jpeg,image/png,image/webp';fi.hidden=true;
+    pb.appendChild(btn(u.photo?'Changer la photo':'Ajouter une photo',function(){fi.click()}));if(u.photo)pb.appendChild(btn('Retirer',function(){api('DELETE','me/photo/').then(function(){toast('Photo retirée.');loadProfil()}).catch(function(e){toast(e.message,true)})}));pb.appendChild(fi);
+    fi.onchange=function(){var f=fi.files[0];if(!f)return;if(['image/jpeg','image/png','image/webp'].indexOf(f.type)<0){toast('Format non pris en charge : utilisez JPG, PNG ou WebP.',true);return}if(f.size>2*1024*1024){toast('Image trop lourde (2 Mo maximum).',true);return}
+      var fd=new FormData();fd.append('photo',f);api('POST','me/photo/',fd).then(function(){toast('Photo enregistrée.');loadProfil()}).catch(function(e){toast(e.message,true)})};
+    id.appendChild(pb);top.appendChild(id);c.appendChild(top);
+    c.appendChild(el('h3','Informations personnelles','sepl'));
+    var f=el('form',null,'g2');f.noValidate=true;
+    var fn=field('Nom complet','pf_name','text',u.name,'name',150),fe=field('E-mail (mot de passe oublié)','pf_email','email',u.email,'email'),fp=field('Téléphone','pf_phone','tel',u.phone,'tel',30);
+    [fn,fe,fp].forEach(function(w){f.appendChild(w)});
+    var ro=field('Identifiant de connexion','pf_user','text',u.username);ro.querySelector('input').readOnly=true;f.appendChild(ro);
+    var er=el('div',null,'err full');er.setAttribute('role','alert');f.appendChild(er);
+    var sv=el('button','Enregistrer','p');sv.type='submit';var ft=el('div',null,'dfoot full');ft.appendChild(sv);f.appendChild(ft);
+    f.onsubmit=function(ev){ev.preventDefault();er.textContent='';var n=$('pf_name').value.trim(),m=$('pf_email').value.trim();if(n.length<2){er.textContent='Indiquez votre nom complet.';return}if(!m){er.textContent='L’e-mail est obligatoire : il sert à récupérer votre mot de passe.';return}
+      busy(sv,true,'Enregistrement…');api('PATCH','me/',{name:n,email:m,phone:$('pf_phone').value.trim()}).then(function(){busy(sv,false);toast('Profil enregistré.');loadProfil()}).catch(function(x){busy(sv,false);er.textContent=x.message})};
+    c.appendChild(f);
+    var info=el('div','Dernière connexion : '+dt(u.last_login),'small mut');info.style.marginTop='10px';c.appendChild(info);
+    var p=$('ppw');p.textContent='';p.appendChild(el('h2','Mot de passe'));p.appendChild(el('div','Choisissez un mot de passe d’au moins 8 caractères, que vous n’utilisez nulle part ailleurs.','mut small'));
+    var g=el('form',null,'g2');g.noValidate=true;g.style.marginTop='10px';var cur=field('Mot de passe actuel','pw_cur','password','','current-password'),nw=field('Nouveau mot de passe','pw_new','password','','new-password'),cf=field('Confirmation','pw_cf','password','','new-password');
+    cur.className='full';[cur,nw,cf].forEach(function(w){g.appendChild(w)});var pe=el('div',null,'err full');pe.setAttribute('role','alert');g.appendChild(pe);
+    var pbtn=el('button','Changer le mot de passe','p');pbtn.type='submit';var pf=el('div',null,'dfoot full');pf.appendChild(pbtn);g.appendChild(pf);
+    g.onsubmit=function(ev){ev.preventDefault();pe.textContent='';if(!$('pw_cur').value){pe.textContent='Saisissez votre mot de passe actuel.';return}if($('pw_new').value!==$('pw_cf').value){pe.textContent='Les deux mots de passe ne correspondent pas.';return}
+      busy(pbtn,true,'Enregistrement…');api('POST','me/password/',{current:$('pw_cur').value,new:$('pw_new').value,confirm:$('pw_cf').value}).then(function(){busy(pbtn,false);['pw_cur','pw_new','pw_cf'].forEach(function(i){$(i).value=''});toast('Mot de passe modifié.')}).catch(function(x){busy(pbtn,false);pe.textContent=x.message})};
+    p.appendChild(g);
+    var sb=el('div');sb.style.marginTop='8px';sb.appendChild(btn('Sécurité : double authentification…',function(){$('sec').click()}));p.appendChild(sb)}
+
+  /* ---- statistiques : courbes et diagrammes (SVG, sans bibliothèque) ---- */
+  var SVGNS='http://www.w3.org/2000/svg',charts=[];
+  function sv(tag,attrs,parent){var n=document.createElementNS(SVGNS,tag);for(var k in attrs)n.setAttribute(k,attrs[k]);if(parent)parent.appendChild(n);return n}
+  function nice(max){if(max<=4)return 4;var p=Math.pow(10,Math.floor(Math.log10(max/4))),m=[1,2,2.5,5,10];for(var i=0;i<m.length;i++){if(m[i]*p*4>=max)return m[i]*p*4}return max}
+  function fmtN(n){return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')}
+  var tip=$('tip');function tipShow(html,x,y){tip.textContent='';html.forEach(function(r,i){tip.appendChild(el(i?'div':'b',r))});tip.style.display='block';var w=tip.offsetWidth,h=tip.offsetHeight;tip.style.left=Math.min(Math.max(8,x+12),innerWidth-w-8)+'px';tip.style.top=Math.max(8,y-h-10)+'px'}function tipHide(){tip.style.display='none'}
+  function dayLabel(s){var d=s.split('-');return d[2]+'/'+d[1]}
+  function monthLabelFr(s){var d=s.split('-');return new Date(+d[0],+d[1]-1,15).toLocaleDateString('fr-FR',{month:'short'}).replace('.','')+' '+d[0].slice(2)}
+  /* carte : titre, légende d'une série, graphique, bascule vers le tableau (accessibilité) */
+  function chartCard(box,title,sub,legend,draw,head,rows){
+    box.textContent='';var h=el('div',null,'cc-head'),t=el('div');t.appendChild(el('h2',title));if(sub)t.appendChild(el('div',sub,'mut small'));h.appendChild(t);
+    var r=el('div',null,'actions');if(legend){var l=el('span',null,'legend');l.appendChild(el('i'));l.appendChild(document.createTextNode(legend));r.appendChild(l)}
+    var sw=btn('Voir le tableau',function(){var on=tw.hidden;tw.hidden=!on;ch.hidden=on;sw.textContent=on?'Voir le graphique':'Voir le tableau';if(!on)draw(ch)});r.appendChild(sw);h.appendChild(r);box.appendChild(h);
+    var ch=el('div',null,'chart');ch.style.marginTop='10px';box.appendChild(ch);
+    var tw=el('div',null,'tbl tblv');tw.hidden=true;var tb=el('table'),th=el('thead'),hr=el('tr');head.forEach(function(x){hr.appendChild(el('th',x))});th.appendChild(hr);tb.appendChild(th);var bd=el('tbody');
+    rows.forEach(function(rw){var tr=el('tr');rw.forEach(function(v){tr.appendChild(el('td',v))});bd.appendChild(tr)});tb.appendChild(bd);tw.appendChild(tb);box.appendChild(tw);
+    draw(ch);charts.push({host:ch,draw:draw})}
+  function empty(host,msg){host.textContent='';host.appendChild(el('p',msg,'empty'))}
+  /* courbe : 2 px, aire à 10 %, repère final, infobulle au survol et au toucher */
+  function lineChart(host,pts,unit){
+    host.textContent='';var W=host.clientWidth||320,H=230,m={l:44,r:18,t:14,b:28},iw=W-m.l-m.r,ih=H-m.t-m.b;
+    var max=Math.max.apply(null,pts.map(function(p){return p.v}).concat([1])),top=nice(max),n=pts.length;
+    var s=sv('svg',{viewBox:'0 0 '+W+' '+H,height:H,role:'img','aria-label':'Courbe : '+pts.length+' points, maximum '+max+' '+unit},host);
+    var X=function(i){return m.l+(n<2?iw/2:i*iw/(n-1))},Y=function(v){return m.t+ih-v/top*ih};
+    for(var g=0;g<=4;g++){var yv=top/4*g,y=Y(yv);sv('line',{x1:m.l,x2:W-m.r,y1:y,y2:y,class:'grid'},s);var tx=sv('text',{x:m.l-8,y:y+4,'text-anchor':'end'},s);tx.textContent=fmtN(yv)}
+    var tickN=Math.min(n,W<420?4:6);for(var k=0;k<tickN;k++){var i=tickN<2?0:Math.round(k*(n-1)/(tickN-1));var lx=sv('text',{x:X(i),y:H-8,'text-anchor':k===0?'start':k===tickN-1?'end':'middle'},s);lx.textContent=pts[i].x}
+    var d=pts.map(function(p,i){return(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.v).toFixed(1)}).join(' ');
+    sv('path',{d:d+' L'+X(n-1).toFixed(1)+' '+Y(0)+' L'+X(0).toFixed(1)+' '+Y(0)+' Z',fill:'var(--s1)','fill-opacity':'.10'},s);
+    sv('path',{d:d,fill:'none',stroke:'var(--s1)','stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round'},s);
+    var li=n-1,ld=sv('circle',{cx:X(li),cy:Y(pts[li].v),r:4,fill:'var(--s1)',stroke:'var(--card)','stroke-width':2},s);
+    var lt=sv('text',{x:X(li)-8,y:Y(pts[li].v)-10,'text-anchor':'end',style:'fill:var(--ink);font-weight:600'},s);lt.textContent=fmtN(pts[li].v);
+    var mi=0;pts.forEach(function(p,i){if(p.v>pts[mi].v)mi=i});
+    if(pts[mi].v>0&&mi!==li&&pts[mi].v>pts[li].v){sv('circle',{cx:X(mi),cy:Y(pts[mi].v),r:4,fill:'var(--s1)',stroke:'var(--card)','stroke-width':2},s);var mt=sv('text',{x:X(mi),y:Y(pts[mi].v)-10,'text-anchor':'middle',style:'fill:var(--ink);font-weight:600'},s);mt.textContent=fmtN(pts[mi].v)}
+    var cur=sv('line',{y1:m.t,y2:m.t+ih,stroke:'var(--mut)','stroke-width':1,visibility:'hidden'},s),dot=sv('circle',{r:5,fill:'var(--s1)',stroke:'var(--card)','stroke-width':2,visibility:'hidden'},s);
+    var hit=sv('rect',{x:m.l,y:m.t,width:iw,height:ih,fill:'transparent'},s);
+    function at(ev){var b=s.getBoundingClientRect(),cx=(ev.touches?ev.touches[0].clientX:ev.clientX),i=n<2?0:Math.round((cx-b.left-m.l)/iw*(n-1));i=Math.max(0,Math.min(n-1,i));
+      cur.setAttribute('x1',X(i));cur.setAttribute('x2',X(i));cur.setAttribute('visibility','visible');dot.setAttribute('cx',X(i));dot.setAttribute('cy',Y(pts[i].v));dot.setAttribute('visibility','visible');
+      tipShow([pts[i].full,fmtN(pts[i].v)+' '+unit],b.left+X(i),b.top+Y(pts[i].v))}
+    function off(){cur.setAttribute('visibility','hidden');dot.setAttribute('visibility','hidden');tipHide()}
+    hit.addEventListener('mousemove',at);hit.addEventListener('touchstart',at,{passive:true});hit.addEventListener('touchmove',at,{passive:true});hit.addEventListener('mouseleave',off);hit.addEventListener('touchend',off)}
+  /* colonnes : 24 px au plus, sommet arrondi à 4 px, base droite */
+  function colChart(host,pts,unit){
+    host.textContent='';var W=host.clientWidth||320,H=210,m={l:36,r:10,t:16,b:28},iw=W-m.l-m.r,ih=H-m.t-m.b,n=pts.length;
+    var max=Math.max.apply(null,pts.map(function(p){return p.v}).concat([1])),top=nice(max);
+    var s=sv('svg',{viewBox:'0 0 '+W+' '+H,height:H,role:'img','aria-label':'Colonnes : '+n+' mois, maximum '+max+' '+unit},host),Y=function(v){return m.t+ih-v/top*ih},slot=iw/n,bw=Math.min(24,slot-4);
+    for(var g=0;g<=4;g++){var y=Y(top/4*g);sv('line',{x1:m.l,x2:W-m.r,y1:y,y2:y,class:'grid'},s);var tx=sv('text',{x:m.l-8,y:y+4,'text-anchor':'end'},s);tx.textContent=fmtN(top/4*g)}
+    var mi=0;pts.forEach(function(p,i){if(p.v>pts[mi].v)mi=i});
+    pts.forEach(function(p,i){var cx=m.l+slot*(i+.5),h=p.v/top*ih,x=cx-bw/2,y=m.t+ih-h;
+      if(p.v>0){var r=Math.min(4,h,bw/2);sv('path',{d:'M'+x+' '+(m.t+ih)+'V'+(y+r)+'Q'+x+' '+y+' '+(x+r)+' '+y+'H'+(x+bw-r)+'Q'+(x+bw)+' '+y+' '+(x+bw)+' '+(y+r)+'V'+(m.t+ih)+'Z',fill:'var(--s1)'},s)}
+      if((i===mi||i===n-1)&&p.v>0){var t=sv('text',{x:cx,y:y-5,'text-anchor':'middle',style:'fill:var(--ink);font-weight:600'},s);t.textContent=fmtN(p.v)}
+      if((n-1-i)%Math.max(1,Math.ceil(52/slot))===0){var lx=sv('text',{x:cx,y:H-8,'text-anchor':'middle'},s);lx.textContent=p.x}
+      var hit=sv('rect',{x:cx-slot/2,y:m.t,width:slot,height:ih,fill:'transparent'},s);
+      hit.addEventListener('mousemove',function(ev){tipShow([p.full,fmtN(p.v)+' '+unit],ev.clientX,ev.clientY)});hit.addEventListener('mouseleave',tipHide);hit.addEventListener('touchstart',function(ev){tipShow([p.full,fmtN(p.v)+' '+unit],ev.touches[0].clientX,ev.touches[0].clientY)},{passive:true})})}
+  /* barres horizontales : valeur au bout de la barre */
+  function barChart(host,items,unit){host.textContent='';var mx=Math.max.apply(null,items.map(function(e){return e.v}).concat([1])),w=el('div',null,'bars');
+    items.forEach(function(e){var row=el('div',null,'brow');row.appendChild(el('span',e.label,'n'));var tr=el('span',null,'track'),i=el('i');i.style.width=Math.max(e.v?2:0,Math.round(e.v/mx*100))+'%';tr.appendChild(i);row.appendChild(tr);row.appendChild(el('span',fmtN(e.v),'v'));
+      row.addEventListener('mousemove',function(ev){tipShow([e.label,fmtN(e.v)+' '+unit],ev.clientX,ev.clientY)});row.addEventListener('mouseleave',tipHide);w.appendChild(row)});host.appendChild(w)}
+  var resizeT=null;window.addEventListener('resize',function(){clearTimeout(resizeT);resizeT=setTimeout(function(){charts.forEach(function(c){if(c.host.isConnected&&!c.host.hidden)c.draw(c.host)})},150)});
+  function loadStats(){var k=$('skpis');k.textContent='';k.appendChild(skel(2));charts=[];
+    api('GET','plateforme/statistiques/?jours='+$('per').value).then(function(s){
+      var P=' ('+s.jours+' j)';
+      k.textContent='';[['dash','Actions de l’administration'+P,fmtN(s.total_actions)],['school','Écoles actives / suspendues',s.ecoles_actives+' / '+s.ecoles_suspendues],['plus','Écoles créées'+P,fmtN(s.ecoles_creees)],['users','Mots de passe réinitialisés'+P,fmtN(s.reinitialisations)],['warn','Connexions refusées ou bloquées'+P,fmtN(s.total_refus),s.total_refus>0],['stu','Élèves inscrits (écoles actives)',fmtN(s.eleves)],['ok','Abonnements échus',fmtN((s.abonnements.echu||0)+(s.abonnements.grace||0)),(s.abonnements.echu||0)+(s.abonnements.grace||0)>0]].forEach(function(x){k.appendChild(kpi(x[0],x[1],x[2],x[3]))});
+      var days=function(a){return a.map(function(c){return{x:dayLabel(c.date),full:new Date(c.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}),v:c.n}})};
+      chartCard($('c1'),'Actions de l’administration par jour','Créations, suspensions, réinitialisations, corrections','actions',function(h){s.total_actions?lineChart(h,days(s.actions),'action(s)'):empty(h,'Aucune action sur la période.')},['Jour','Actions'],s.actions.map(function(c){return[dayLabel(c.date),c.n]}));
+      chartCard($('c2'),'Actions par type','Sur la période',null,function(h){s.actions_par_type.length?barChart(h,s.actions_par_type.map(function(r){return{label:r.action,v:r.n}}),'fois'):empty(h,'Aucune action sur la période.')},['Action','Nombre'],s.actions_par_type.map(function(r){return[r.action,r.n]}));
+      var ec=s.ecoles.map(function(i){return{x:monthLabelFr(i.mois),full:monthLabelFr(i.mois)+' : total des écoles',v:i.cumul}});
+      chartCard($('c3'),'Écoles gérées','Total cumulé sur 12 mois','écoles',function(h){ec[ec.length-1].v?lineChart(h,ec,'école(s)'):empty(h,'Aucune école pour l’instant.')},['Mois','Nouvelles','Total'],s.ecoles.map(function(i){return[monthLabelFr(i.mois),i.nouvelles,i.cumul]}));
+      var todo=s.a_traiter.map(function(r){return{label:r.label,v:r.n}});
+      chartCard($('c4'),'Comptes de direction à suivre',s.comptes_direction+' comptes (directeur, fondateur, secrétariat) dans toutes les écoles',null,function(h){s.comptes_direction?barChart(h,todo,'compte(s)'):empty(h,'Aucun compte de direction.')},['À suivre','Comptes'],s.a_traiter.map(function(r){return[r.label,r.n]}));
+      var AL={sans_echeance:'Sans échéance',actif:'À jour',bientot:'Bientôt échus',grace:'En délai de grâce',echu:'Échus (accès bloqué)'},nab=Object.keys(AL).reduce(function(t,k){return t+(s.abonnements[k]||0)},0);
+      chartCard($('c7'),'Élèves inscrits par école','Total : '+fmtN(s.eleves)+' élèves dans les écoles actives (chiffres agrégés)',null,function(h){s.eleves?barChart(h,s.eleves_par_ecole.map(function(r){return{label:r.nom,v:r.n}}),'élève(s)'):empty(h,'Aucun élève inscrit pour l’instant.')},['École','Élèves'],s.eleves_par_ecole.map(function(r){return[r.nom,r.n]}));
+      chartCard($('c6'),'Abonnements des écoles actives','Paiements enregistrés'+P+' : '+s.paiements.n+' pour '+fcfa(s.paiements.total),null,function(h){nab?barChart(h,Object.keys(AL).map(function(k){return{label:AL[k],v:s.abonnements[k]||0}}),'école(s)'):empty(h,'Aucune école active.')},['État','Écoles'],Object.keys(AL).map(function(k){return[AL[k],s.abonnements[k]||0]}));
+      chartCard($('c5'),'Sécurité de l’accès à la plateforme','Connexions refusées ou bloquées par jour ('+s.connexions_admin+' connexion'+(s.connexions_admin>1?'s':'')+' réussie'+(s.connexions_admin>1?'s':'')+' sur la période)','refus',function(h){s.total_refus?lineChart(h,days(s.refus),'refus'):empty(h,'Aucune tentative refusée ou bloquée sur la période.')},['Jour','Refus'],s.refus.map(function(c){return[dayLabel(c.date),c.n]}));
+    }).catch(function(x){k.textContent='';k.appendChild(el('div',x.message,'err'))})}
+  $('per').onchange=loadStats;
+
+  /* ---- journal ---- */
+  var J={offset:0,total:0},jt=null;
+  function loadJournal(reset){if(reset){J.offset=0;$('jrows').textContent=''}$('je').textContent='';
+    api('GET','plateforme/journal/?limit=50&offset='+J.offset+'&q='+encodeURIComponent($('jq').value.trim())+'&action='+encodeURIComponent($('ja').value)).then(function(r){
+      if(reset){var sel=$('ja'),cur=sel.value;sel.textContent='';var o=el('option','Toutes');o.value='';sel.appendChild(o);r.actions.forEach(function(a){var op=el('option',a);op.value=a;sel.appendChild(op)});sel.value=cur}
+      var tb=$('jrows');r.results.forEach(function(e){var tr=el('tr');tr.appendChild(tdl(dt(e.ts),'Date'));var a=tdl('','Action');a.appendChild(el('span',e.action,'tag '+(DANGER.test(e.action)?'bad':'ok2')));tr.appendChild(a);
+        tr.appendChild(tdl(e.detail,'Détail'));tr.appendChild(tdl(e.ecole||'—','École'));tr.appendChild(tdl(e.user||'—','Par'));tr.appendChild(tdl(e.ip||'—','IP'));tb.appendChild(tr)});
+      J.offset+=r.results.length;J.total=r.total;
+      if(!tb.children.length){var t2=el('tr'),c=el('td','Aucune entrée.','empty');c.colSpan=6;t2.appendChild(c);tb.appendChild(t2)}
+      $('jc').textContent=J.total?J.offset+' sur '+J.total+' entrée'+(J.total>1?'s':''):'';$('jmore').hidden=J.offset>=J.total}).catch(function(x){$('je').textContent=x.message})}
+  $('jmore').onclick=function(){loadJournal(false)};$('ja').onchange=function(){loadJournal(true)};
+  $('jq').oninput=function(){clearTimeout(jt);jt=setTimeout(function(){loadJournal(true)},300)};
+
+  /* ---- connexion, mot de passe ---- */
+  function enter(){$('authwrap').hidden=true;document.body.classList.remove('isauth');$('app').hidden=false;$('out').hidden=false;$('sec').hidden=false;$('hlp').hidden=false;$('who').textContent='Connecté : '+me.name;tab('dash');api('GET','plateforme/administrateurs/').then(function(r){var u=r.filter(function(x){return x.is_me})[0];if(u)setWho(u)}).catch(function(){})}
+  $('lf').onsubmit=function(ev){ev.preventDefault();$('le').textContent='';$('lo').hidden=true;
+    if(!need($('u').value,$('le'),$('lf'),'Saisissez votre identifiant.')||!need($('p').value,$('le'),$('lf'),'Saisissez votre mot de passe.'))return;
+    if(!capOk('l',$('le'),$('lf')))return;
+    busy($('lb'),true,'Connexion…');
+    api('POST','auth/login/',{ecole:'plateforme',username:$('u').value.trim(),password:$('p').value,otp:$('otp').value.trim(),captcha_token:capBody('l').captcha_token,captcha_answer:capBody('l').captcha_answer}).then(function(d){
+      if(!d.user.platform_admin)throw new Error('Ce compte n’administre pas la plateforme.');
+      access=d.access;refresh=d.refresh;keep();me=d.user;$('p').value='';busy($('lb'),false);
+      if(me.must_change_password){show('cp');$('out').hidden=false}else enter();
+    }).catch(function(x){busy($('lb'),false);loadCap('l');if(x.otp){$('otpw').hidden=false;$('otp').focus();if($('otp').value){$('otp').select()}fail($('le'),$('lf'),$('otp').value?x.message:'Saisissez le code de votre application d’authentification.')}else{fail($('le'),$('lf'),x.message);$('p').select()}})};
+  $('cf2').onsubmit=function(ev){ev.preventDefault();$('ce2').textContent='';
+    if($('cn').value!==$('cc').value){fail($('ce2'),$('cf2'),'Les deux mots de passe ne correspondent pas.');return}
+    busy($('cbtn'),true,'Enregistrement…');
+    api('POST','me/password/',{new:$('cn').value,confirm:$('cc').value}).then(function(){busy($('cbtn'),false);$('cn').value=$('cc').value='';me.must_change_password=false;enter()}).catch(function(x){busy($('cbtn'),false);fail($('ce2'),$('cf2'),x.message)})};
+  /* ---- anti-robot (petit calcul fourni par le serveur) ---- */
+  var CAP={l:'',f:''};
+  function loadCap(k){CAP[k]='';$(k+'ca').value='';api('GET','auth/captcha/').then(function(c){if(!c.enabled){$(k+'cap').hidden=true;return}CAP[k]=c.token;$(k+'cq').textContent=c.question;$(k+'cap').hidden=false}).catch(function(){})}
+  ['l','f'].forEach(function(k){$(k+'cr').onclick=function(){loadCap(k);$(k+'ca').focus()}});
+  function capBody(k){return $(k+'cap').hidden?{}:{captcha_token:CAP[k],captcha_answer:$(k+'ca').value.trim()}}
+  function capOk(k,errEl,form){if($(k+'cap').hidden||$(k+'ca').value.trim())return true;fail(errEl,form,'Répondez au calcul anti-robot.');$(k+'ca').focus();return false}
+  loadCap('l');loadCap('f');
+
+  /* ---- double authentification ---- */
+  function grp(k){return k.replace(/(.{4})/g,'$1 ').trim()}
+  $('sec').onclick=function(){api('GET','auth/2fa/').then(function(st){var b=el('div');
+    b.appendChild(el('p',st.enabled?'La double authentification est active : chaque connexion (portail et administration Django) demande un code de votre téléphone. Il vous reste '+st.recovery_left+' code(s) de secours.':'La double authentification n’est pas active. Elle protège ce compte même si son mot de passe est découvert : recommandée.','small'));
+    var act=st.enabled?[btn('Désactiver…',function(){closeModal();formBox('Désactiver la double authentification',[{id:'pw',label:'Mot de passe',type:'password',required:true,full:true,auto:'current-password'},{id:'c',label:'Code ou code de secours',required:true,full:true,auto:'one-time-code'}],'Désactiver',function(v){return api('POST','auth/2fa/desactiver/',{password:v.pw,code:v.c}).then(function(){toast('Double authentification désactivée.')})})},'bad')]:[btn('Activer',function(){closeModal();startTfa()},'p')];
+    var cl=el('button','Fermer');cl.onclick=closeModal;openModal('Sécurité du compte',b,act.concat([cl]))}).catch(function(x){toast(x.message,true)})};
+  function startTfa(){api('POST','auth/2fa/').then(function(r){var b=el('div');
+    b.appendChild(el('p','1. Dans votre application d’authentification (Google Authenticator, Microsoft Authenticator, Aegis…), ajoutez un compte « saisie manuelle » avec cette clé :','small'));
+    var k=el('div',null,'cred');k.appendChild(el('code',grp(r.secret)));b.appendChild(k);
+    var a=el('a','Ouvrir dans l’application (sur téléphone)');a.href=r.uri;a.className='small';b.appendChild(a);
+    b.appendChild(el('p','2. Saisissez ci-dessous le code à 6 chiffres affiché.','small'));
+    var i=el('input');i.inputMode='numeric';i.maxLength=6;i.autocomplete='one-time-code';i.setAttribute('aria-label','Code à 6 chiffres');b.appendChild(i);var er=el('div',null,'err');er.setAttribute('role','alert');b.appendChild(er);
+    var ok=el('button','Activer','p'),no=el('button','Annuler');no.onclick=closeModal;
+    ok.onclick=function(){er.textContent='';busy(ok,true,'Vérification…');api('POST','auth/2fa/activer/',{code:i.value.trim()}).then(function(d){closeModal();setTimeout(function(){showCodes(d.recovery_codes)},0)}).catch(function(x){busy(ok,false);er.textContent=x.message})};
+    openModal('Activer la double authentification',b,[no,ok]);i.focus()}).catch(function(x){toast(x.message,true)})}
+  function showCodes(codes){var b=el('div');b.appendChild(el('p','Double authentification activée. Notez ces codes de secours et gardez-les en lieu sûr : chacun ne sert qu’une fois si vous perdez votre téléphone. Ils ne seront plus jamais affichés.','small'));
+    var x=el('div',null,'cred');codes.forEach(function(c){x.appendChild(el('div',c,'')).style.fontFamily='monospace'});b.appendChild(x);
+    var cp=el('button','Copier'),ok=el('button','J’ai noté ces codes','p');cp.onclick=function(){try{navigator.clipboard.writeText(codes.join('\n')).then(function(){toast('Copié.')})}catch(e){toast('Copie impossible : sélectionnez le texte.',true)}};ok.onclick=closeModal;openModal('Codes de secours',b,[cp,ok])}
+  $('out').onclick=function(){api('POST','auth/logout/',{refresh:refresh}).then(endSession,endSession)};
+  $('forgot').onclick=function(){$('fe').textContent='';$('fo').hidden=true;$('fi').value=$('u').value;show('fg')};$('fb').onclick=function(){show('login')};
+  $('ff').onsubmit=function(ev){ev.preventDefault();$('fe').textContent='';$('fo').hidden=true;
+    if(!need($('fi').value,$('fe'),$('ff'),'Saisissez votre identifiant ou votre e-mail.'))return;
+    if(!capOk('f',$('fe'),$('ff')))return;
+    busy($('fbtn'),true,'Envoi…');
+    var cb=capBody('f');api('POST','auth/forgot-password/',{ecole:'plateforme',identifier:$('fi').value.trim(),captcha_token:cb.captcha_token,captcha_answer:cb.captcha_answer}).then(function(){loadCap('f');
+      $('fo').textContent='Si un compte correspond, un e-mail vient de partir avec un lien valable une heure. Pensez à vérifier vos courriers indésirables.';$('fo').hidden=false;
+      var n=30,b=$('fbtn');b.disabled=true;b.textContent='Renvoyer dans '+n+' s';var t=setInterval(function(){n--;if(n<=0){clearInterval(t);b.disabled=false;b.textContent='Renvoyer le lien'}else b.textContent='Renvoyer dans '+n+' s'},1000);
+    }).catch(function(x){busy($('fbtn'),false);loadCap('f');fail($('fe'),$('ff'),x.message)})};
+  var m=/^#reinitialiser\/([^\/]+)\/([^\/]+)$/.exec(location.hash);
+  function backToLogin(msg){history.replaceState(null,'',location.pathname+location.search);show('login');if(msg){$('lo').textContent=msg;$('lo').hidden=false}}
+  $('rback').onclick=function(){backToLogin()};
+  if(m){show('rs');$('rf').onsubmit=function(ev){ev.preventDefault();$('re').textContent='';
+    if($('rn').value!==$('rc').value){fail($('re'),$('rf'),'Les deux mots de passe ne correspondent pas.');return}
+    busy($('rb'),true,'Enregistrement…');
+    api('POST','auth/reset-password/',{ecole:'plateforme',uid:m[1],token:m[2],new:$('rn').value,confirm:$('rc').value}).then(function(){busy($('rb'),false);backToLogin('Mot de passe modifié. Vous pouvez vous connecter.')}).catch(function(x){busy($('rb'),false);fail($('re'),$('rf'),x.message)})}}
+  else if(saved()){   // page actualisée : reprise de la session de l'onglet
+    refresh=saved();$('authwrap').hidden=true;   // pas d'écran de connexion furtif pendant la reprise
+    renew().then(function(ok){if(!ok)throw new Error('expirée');return api('GET','me/')}).then(function(u){
+      if(!u.platform_admin)throw new Error('pas admin');me=u;
+      if(me.must_change_password){show('cp');$('out').hidden=false}else enter()
+    }).catch(function(){access='';refresh='';keep();show('login')})}
+  else show('login');
+})();
+// Hauteur réelle du bandeau (elle change selon la largeur) : le menu se fixe juste en dessous
+(function(){var h=document.getElementById('top');if(!h||!window.ResizeObserver)return;
+  new ResizeObserver(function(){document.documentElement.style.setProperty('--hh',h.offsetHeight+'px')}).observe(h)})();
+</script>
+</body>
+</html>

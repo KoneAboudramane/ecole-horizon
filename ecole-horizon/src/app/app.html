@@ -1,0 +1,268 @@
+@if (store.resuming()) {
+  <main class="auth"><div class="auth-stage"><p class="muted" role="status">Reprise de votre session…</p></div></main>
+} @else if (!store.me() && !showLogin()) {
+  <app-vitrine (login)="openLogin()" />
+} @else if (!store.me()) {
+  <main class="auth">
+    <div class="auth-top"><button type="button" class="link small" (click)="closeLogin()">← Accueil</button>@if (store.apiMode()) { <span class="tiny auth-note">Connecté au serveur de l’école</span> } @else { <span class="tiny auth-note">Prototype de démonstration · données fictives</span> }<div class="lang-row"><app-lang /><app-theme /></div></div>
+    <div class="auth-stage">
+      <div class="auth-card">
+        <section class="auth-brand">
+          <app-logo [src]="school().logo" [size]="104" />
+          <h1>{{ school().name }}</h1>
+          <span class="hero-tag">Année scolaire {{ school().year }}</span>
+          <ul class="hero-points">
+            <li><span class="hp-ic"><app-icon name="clipboard" [size]="16" /></span><span>Notes, présences et bulletins en ligne</span></li>
+            <li><span class="hp-ic"><app-icon name="card" [size]="16" /></span><span>Scolarité, reçus et suivi des paiements</span></li>
+            <li><span class="hp-ic"><app-icon name="shield" [size]="16" /></span><span>Accès adapté à chaque profil</span></li>
+          </ul>
+        </section>
+        @if (authView() === 'login') {
+        <form class="auth-form" (ngSubmit)="submit()">
+          @if (resetOk()) { <div class="banner ok" role="status">{{ resetOk() }}</div> }
+          <div class="auth-head"><h2>Connexion</h2><p class="muted">Accédez à votre espace personnel.</p></div>
+          @if (store.multiSchool() && !store.ecoleLocked) {
+            <label class="field"><span>Code de l’établissement</span>
+              <span class="input-ic"><app-icon name="shield" [size]="18" />
+                <input name="e" [ngModel]="store.ecole()" (ngModelChange)="store.setEcole($event)" (blur)="store.loadPublicSchool()" autocapitalize="none" autocomplete="organization" placeholder="Ex. horizon" /></span>
+            </label>
+          }
+          <label class="field"><span>Identifiant</span>
+            <span class="input-ic"><app-icon name="user" [size]="18" />
+              <input name="u" [(ngModel)]="username" autocomplete="username" placeholder="Matricule, téléphone ou identifiant" /></span>
+          </label>
+          <label class="field"><span>Mot de passe</span>
+            <span class="input-ic"><app-icon name="shield" [size]="18" />
+              <input name="p" [type]="showPw() ? 'text' : 'password'" [(ngModel)]="password" autocomplete="current-password" />
+              <button type="button" class="eye" (click)="showPw.set(!showPw())" [attr.aria-label]="showPw() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'">{{ showPw() ? 'Masquer' : 'Afficher' }}</button></span>
+          </label>
+          @if (store.captcha(); as c) {
+            <label class="field"><span>Vérification anti-robot : {{ c.question }}</span>
+              <input name="cap1" [(ngModel)]="captchaAnswer" inputmode="numeric" autocomplete="off" maxlength="4" /></label>
+          }
+          @if (loginError()) { <div class="banner bad" role="alert">{{ loginError() }}</div> }
+          <button class="btn primary block big" type="submit" [disabled]="busy()">{{ busy() ? 'Connexion…' : 'Se connecter' }}</button>
+          <button class="link tiny" type="button" (click)="goForgot()">Mot de passe oublié ?</button>
+        </form>
+        } @else if (authView() === 'forgot') {
+        <form class="auth-form" (ngSubmit)="sendForgot()">
+          <div class="auth-head"><h2>Mot de passe oublié</h2><p class="muted">Personnel de l’école : saisissez votre identifiant ou votre adresse e-mail. Nous vous envoyons un lien pour choisir un nouveau mot de passe.</p></div>
+          @if (store.multiSchool() && !store.ecoleLocked) {
+            <label class="field"><span>Code de l’établissement</span>
+              <input name="fe" [ngModel]="store.ecole()" (ngModelChange)="store.setEcole($event)" (blur)="store.loadPublicSchool()" autocapitalize="none" placeholder="Ex. horizon" /></label>
+          }
+          <label class="field"><span>Identifiant ou adresse e-mail</span><input name="fi" [(ngModel)]="forgotId" autocomplete="username" autocapitalize="none" /></label>
+          @if (store.captcha(); as c) {
+            <label class="field"><span>Vérification anti-robot : {{ c.question }}</span>
+              <input name="cap2" [(ngModel)]="captchaAnswer" inputmode="numeric" autocomplete="off" maxlength="4" /></label>
+          }
+          @if (forgotMsg()) { <div class="banner ok" role="status">{{ forgotMsg() }}</div> }
+          @if (forgotErr()) { <div class="banner bad" role="alert">{{ forgotErr() }}</div> }
+          <button class="btn primary block big" type="submit" [disabled]="busy()">{{ busy() ? 'Envoi…' : 'Envoyer le lien' }}</button>
+          <p class="tiny muted">Parents et élèves : adressez-vous au secrétariat de l’école, qui vous remettra un nouveau mot de passe provisoire.</p>
+          <button class="link tiny" type="button" (click)="authView.set('login')">← Retour à la connexion</button>
+        </form>
+        } @else {
+        <form class="auth-form" (ngSubmit)="saveReset()">
+          <div class="auth-head"><h2>Nouveau mot de passe</h2><p class="muted">Choisissez un mot de passe personnel d’au moins 6 caractères.</p></div>
+          <label class="field"><span>Nouveau mot de passe</span><input name="rp" type="password" [(ngModel)]="resetPw" autocomplete="new-password" /></label>
+          <label class="field"><span>Confirmer le mot de passe</span><input name="rp2" type="password" [(ngModel)]="resetPw2" autocomplete="new-password" /></label>
+          @if (resetErr()) { <div class="banner bad" role="alert">{{ resetErr() }}</div> }
+          <button class="btn primary block big" type="submit" [disabled]="busy()">{{ busy() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+          <button class="link tiny" type="button" (click)="goForgot()">Le lien ne marche plus ? En demander un nouveau</button>
+        </form>
+        }
+      </div>
+      @if (!store.apiMode()) {
+      <section class="auth-demo">
+        <h3>Essayer sans compte</h3>
+        <p class="small muted">Choisissez un profil pour explorer la plateforme avec des données d’exemple (mot de passe : <b>demo</b>).</p>
+        <div class="demo-list">
+          @for (d of demos; track d.username) {
+            <button type="button" class="demo-btn" (click)="quick(d.username)" [title]="d.what">
+              <app-avatar [name]="d.who" [size]="34" />
+              <span class="grow"><b>{{ roleLabel[d.role] }}</b><br><span class="tiny muted">{{ d.who }}</span></span>
+            </button>
+          }
+        </div>
+      </section>
+      }
+    </div>
+  </main>
+} @else if (store.me()!.mustChange) {
+  <main class="login single">
+    <form class="card pad login-card" (ngSubmit)="savePw()">
+      <h2>Choisissez votre mot de passe</h2>
+      <p class="small muted">C’est votre première connexion, ou votre mot de passe a été réinitialisé. Choisissez un mot de passe personnel d’au moins 6 caractères.</p>
+      <label class="field"><span>Nouveau mot de passe</span><input name="a" type="password" [(ngModel)]="newPw" autocomplete="new-password" /></label>
+      <label class="field"><span>Confirmer</span><input name="b" type="password" [(ngModel)]="newPw2" autocomplete="new-password" /></label>
+      @if (pwError()) { <div class="banner bad" role="alert">{{ pwError() }}</div> }
+      <button class="btn primary block" type="submit">Enregistrer et continuer</button>
+      <button class="link tiny" type="button" (click)="store.logout()">Annuler</button>
+    </form>
+  </main>
+} @else {
+  <div class="shell">
+    @if (menuOpen()) { <div class="scrim" (click)="menuOpen.set(false)"></div> }
+    <aside class="side" [class.open]="menuOpen()">
+      <div class="side-brand">
+        <app-logo [src]="school().logo" [size]="38" />
+        <div><b>{{ school().name }}</b><div class="tiny muted">Année {{ school().year }}</div></div>
+      </div>
+      <nav aria-label="Navigation principale">
+        @for (n of nav(); track n.page) {
+          <button type="button" class="nav-item" [class.on]="activeNav() === n.page" (click)="go(n.page)">
+            <app-icon [name]="n.icon" [size]="18" /> <span>{{ n.label }}</span>
+          </button>
+        }
+      </nav>
+      <div class="side-tools"><app-lang /><app-theme /></div>
+      <div class="side-foot tiny muted">{{ store.apiMode() ? 'Serveur connecté' : 'Séance de démonstration' }}<br>{{ dateLong(store.today) }}</div>
+    </aside>
+
+    <div class="main">
+      @for (p of [store.page()]; track p) { <i class="route-bar" aria-hidden="true"></i> }
+      <header class="top">
+        <button type="button" class="icon-btn menu-btn" (click)="menuOpen.set(true)" aria-label="Ouvrir le menu"><app-icon name="menu" /></button>
+        <h1 class="top-title">@for (t of [title()]; track t) { <span class="tt">{{ t }}</span> }</h1>
+
+        @if (store.role() !== 'eleve') {
+          <div class="search pop-host">
+            <app-icon name="search" [size]="16" />
+            <input type="search" placeholder="Rechercher un élève, une classe…" [ngModel]="query()" (ngModelChange)="query.set($event); searchOpen.set(true)" (focus)="searchOpen.set(true)" aria-label="Recherche" />
+            @if (searchOpen() && query().trim().length >= 2) {
+              <div class="pop search-pop">
+                @for (r of results(); track r.kind + r.id) {
+                  <button type="button" class="pop-item" (click)="pick(r)"><b>{{ r.label }}</b><span class="tiny muted">{{ r.sub }}</span></button>
+                } @empty { <div class="empty small">Aucun résultat</div> }
+              </div>
+            }
+          </div>
+        }
+
+        <div class="top-actions">
+          <app-help />
+          <app-lang />
+          <app-theme />
+          @if (store.cursusList().length > 1 && store.role() !== 'parent' && store.role() !== 'eleve') {
+            <select class="term-select" [ngModel]="store.cursusId()" (ngModelChange)="store.switchCursus($event)" aria-label="Cursus">
+              @for (c of store.cursusList(); track c.id) { <option [value]="c.id">{{ c.nom }}</option> }
+            </select>
+          }
+          @if (showTerm()) {
+            <select class="term-select" [ngModel]="store.termId()" (ngModelChange)="store.setTerm($event)" aria-label="Période">
+              @for (t of store.terms(); track t.id) { <option [value]="t.id">{{ t.label }}{{ t.id === store.currentTermId() ? ' (en cours)' : '' }}</option> }
+            </select>
+          }
+          <div class="pop-host">
+            <button type="button" class="icon-btn bell" (click)="bellOpen.set(!bellOpen()); userMenu.set(false)" aria-label="Notifications">
+              <app-icon name="bell" />
+              @if (store.unread() > 0) { <span class="badge">{{ store.unread() }}</span> }
+            </button>
+            @if (bellOpen()) {
+              <div class="pop notif-pop">
+                <div class="pop-head"><b>Notifications</b>
+                  <button type="button" class="link small" (click)="store.markAllReadAsync()">Tout marquer comme lu</button></div>
+                <app-push-cta place="cloche" />
+                <div class="pop-scroll">
+                  @for (n of store.myNotices().slice(0, 25); track n.id) {
+                    <button type="button" class="pop-item" [class.unread]="!n.read" (click)="openNotice(n)">
+                      <span>{{ n.text }}</span><span class="tiny muted">{{ dateLong(n.date) }}</span>
+                    </button>
+                  } @empty { <div class="empty small">Rien de nouveau</div> }
+                </div>
+              </div>
+            }
+          </div>
+          <div class="pop-host">
+            <button type="button" class="user-btn" (click)="userMenu.set(!userMenu()); bellOpen.set(false)">
+              <app-avatar [name]="store.me()!.name" [photo]="store.me()!.photo" [size]="32" />
+              <span class="user-name"><b>{{ store.me()!.name }}</b><span class="tiny muted">{{ store.me()!.roleLabel || roleLabel[store.me()!.role] }}</span></span>
+            </button>
+            @if (userMenu()) {
+              <div class="pop user-pop">
+                <button type="button" class="pop-item row-item" (click)="store.go('profil'); userMenu.set(false)"><app-icon name="user" [size]="15" /> Mon profil</button>
+                @if (!store.apiMode()) {
+                <hr class="sep" />
+                <div class="pop-head tiny muted">Changer de profil (démo)</div>
+                @for (d of demos; track d.username) {
+                  <button type="button" class="pop-item row-item" [class.cur]="store.me()!.username === d.username" (click)="quick(d.username)">
+                    <app-icon name="swap" [size]="15" /> {{ roleLabel[d.role] }} <span class="tiny muted">· {{ d.who }}</span>
+                  </button>
+                }
+                }
+                <hr class="sep" />
+                <button type="button" class="pop-item row-item" (click)="store.logout()"><app-icon name="logout" [size]="15" /> Se déconnecter</button>
+              </div>
+            }
+          </div>
+        </div>
+      </header>
+
+      @if (store.myChildren().length > 1 && (store.role() === 'parent' || store.role() === 'eleve')) {
+        <div class="childbar">
+          <span class="small muted">{{ store.role() === 'eleve' ? 'Cursus :' : 'Enfant :' }}</span>
+          <div class="chips">
+            @for (c of store.myChildren(); track c.id) {
+              <button type="button" class="chip" [class.on]="store.activeChild().id === c.id" (click)="store.pickChild(c.id)">
+                @if (store.role() === 'parent') { {{ c.prenoms }} · }@if (store.childrenAcrossCursus()) { {{ c.cursusNom }} · }{{ c.classLabel || store.className(c.classId) }}</button>
+            }
+          </div>
+        </div>
+      }
+
+      @if (store.lectureSeule()) { <div class="banner warn" role="status" style="margin:12px 16px 0">L’abonnement de l’école est échu : l’école est en lecture seule. Vous pouvez tout consulter, mais plus rien modifier jusqu’au paiement. La direction doit contacter l’administration de la plateforme.</div> }
+      @if (store.abonnementAlerte()) { <div class="banner warn" role="status" style="margin:12px 16px 0">{{ store.abonnementAlerte() }}</div> }
+      <main class="content">
+        @if (!connected()) {
+          <div class="card pad" style="max-width:560px"><h2>Pas encore relié au serveur</h2><p class="muted">Cette page n’est pas encore branchée sur le serveur de l’école. Elle sera disponible dans une prochaine étape.</p></div>
+        } @else {
+        @switch (store.page()) {
+          @case ('dashboard') { <app-dashboard /> }
+          @case ('eleves') { <app-eleves /> }
+          @case ('eleve') { <app-fiche /> }
+          @case ('classes') { <app-classes /> }
+          @case ('matieres') { <app-matieres /> }
+          @case ('comptes') { <app-comptes /> }
+          @case ('parametres') { <app-parametres /> }
+          @case ('annonces') { <app-annonces /> }
+          @case ('journal') { <app-journal /> }
+          @case ('annee') { <app-annee /> }
+          @case ('anciens') { <app-anciens /> }
+          @case ('archives') { <app-archives /> }
+          @case ('repartition') { <app-repartition /> }
+          @case ('conduite') { <app-conduite /> }
+          @case ('educateurs') { <app-educateurs /> }
+          @case ('notes') { <app-notes /> }
+          @case ('bulletins') { <app-bulletins /> }
+          @case ('appel') { <app-appel /> }
+          @case ('presences') { <app-presences /> }
+          @case ('paiements') { <app-paiements /> }
+          @case ('caisse') { <app-caisse /> }
+          @case ('impayes') { <app-impayes /> }
+          @case ('tarifs') { <app-tarifs /> }
+          @case ('rapprochement') { <app-rapprochement /> }
+          @case ('payer') { <app-payer /> }
+          @case ('discipline') { <app-discipline /> }
+          @case ('decisions') { <app-decisions /> }
+          @case ('edt') { <app-edt /> }
+          @case ('devoirs') { <app-devoirs /> }
+          @case ('cours') { <app-cours /> }
+          @case ('roles') { <app-roles /> }
+          @case ('maclasse') { <app-maclasse /> }
+          @case ('cahier') { @if (store.role() !== 'eleve' || store.school().eleveVoitCahier) { <app-cahier /> } }
+          @case ('examens') { <app-examens /> }
+          @case ('messages') { <app-messages /> }
+          @case ('profil') { <app-profil /> }
+          @case ('stats') { <app-stats /> }
+        }
+        }
+      </main>
+    </div>
+    <app-help-overlay [pages]="navPages()" />
+  </div>
+}
+
+<div class="toasts" aria-live="polite">
+  @for (t of store.toasts(); track t.id) { <div class="toast" [class.err]="t.kind === 'err'">{{ t.text }}</div> }
+</div>
