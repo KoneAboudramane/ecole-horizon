@@ -1,0 +1,2 @@
+Site compilé de la plateforme scolaire, pour O2switch (dossier du site).
+Généré automatiquement depuis la branche main (02db547) par publier-site.bat : ne pas modifier ici.

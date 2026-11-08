@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Vérifier un reçu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5f7;--card:#fff;--ink:#14202b;--mut:#5d6b78;--line:#e3e8ee;--acc:#0b6e53;--accbg:#e6f4ee;--bad:#a3231b;--badbg:#fdeceb;--brand:#0a3b2e;--brand2:#0f5a45}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1519;--card:#172026;--ink:#e8eef2;--mut:#9aa8b4;--line:#26323b;--acc:#3fc08f;--accbg:#123327;--bad:#ff8a80;--badbg:#3a1a18}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;place-items:start center;padding:32px 16px}
+main{width:100%;max-width:520px;display:grid;gap:16px}
+.hd{display:flex;gap:12px;align-items:center}.hd .lg{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;color:#fff}
+.hd h1{margin:0;font-size:20px}.hd p{margin:0;color:var(--mut);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(16,32,43,.05),0 6px 20px rgba(16,32,43,.06)}
+form{display:grid;gap:10px}label{font-size:14px;font-weight:600}
+.row{display:flex;gap:8px}input{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:600 18px/1 ui-monospace,Consolas,monospace;letter-spacing:.12em;text-transform:uppercase}
+input:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 25%,transparent)}
+button{padding:12px 18px;border:0;border-radius:10px;background:var(--acc);color:#fff;font:600 15px Figtree,system-ui,sans-serif;cursor:pointer}button:disabled{opacity:.6}
+.hint{font-size:13px;color:var(--mut);margin:0}
+.res{display:grid;gap:14px}.res[hidden]{display:none}
+.verdict{display:flex;gap:12px;align-items:center;padding:14px 16px;border-radius:12px}.verdict .ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:20px;font-weight:700;flex:none}
+.ok .verdict{background:var(--accbg)}.ok .verdict .ic{background:var(--acc);color:#fff}.ok .verdict b{color:var(--acc)}
+.ko .verdict{background:var(--badbg)}.ko .verdict .ic{background:var(--bad);color:#fff}.ko .verdict b{color:var(--bad)}
+.verdict b{display:block;font-size:17px}.verdict span{font-size:14px;color:var(--mut)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}dt{color:var(--mut);font-size:14px}dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.amt{font-size:22px}.lettres{grid-column:2;font-weight:400;font-style:italic;font-size:14px;color:var(--mut);margin-top:-6px}
+.warn{font-size:14px;border-left:3px solid var(--acc);padding:8px 12px;background:var(--bg);border-radius:0 8px 8px 0;margin:0}
+footer{text-align:center;font-size:12.5px;color:var(--mut)}
+</style>
+</head>
+<body>
+<main>
+  <div class="hd"><div class="lg" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+    <div><h1>Vérifier un reçu d’abonnement</h1><p>Contrôlez qu’un reçu a bien été émis par la plateforme.</p></div></div>
+  <section class="card">
+    <form id="f" novalidate>
+      <label for="c">Code de vérification</label>
+      <div class="row"><input id="c" name="c" autocomplete="off" spellcheck="false" maxlength="12" placeholder="XXXX-XXXX" aria-describedby="h"><button id="go" type="submit">Vérifier</button></div>
+      <p class="hint" id="h">Le code est imprimé sous le QR code, en bas du reçu.</p>
+    </form>
+  </section>
+  <section class="card res" id="r" hidden aria-live="polite"></section>
+  <footer>Seuls les reçus enregistrés par l’administration de la plateforme sont reconnus.</footer>
+</main>
+<script src="config.js"></script>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search),base=(window.ECOLE_API||'').replace(/\/+$/,'');
+  if(!window.ECOLE_API&&q.get('api'))base=q.get('api').replace(/\/+$/,'');
+  var f=document.getElementById('f'),inp=document.getElementById('c'),go=document.getElementById('go'),r=document.getElementById('r');
+  function el(t,txt,cls){var e=document.createElement(t);if(txt!=null)e.textContent=txt;if(cls)e.className=cls;return e}
+  function dfr(s){return new Date(String(s).slice(0,10)+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})}
+  function fcfa(n){return (+n||0).toLocaleString('fr-FR')+' FCFA'}
+  function verdict(ok,title,sub){var v=el('div',null,'verdict'),i=el('div',ok?'✓':'!','ic'),t=el('div');i.setAttribute('aria-hidden','true');t.appendChild(el('b',title));if(sub)t.appendChild(el('span',sub));v.appendChild(i);v.appendChild(t);return v}
+  inp.addEventListener('input',function(){var c=inp.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);inp.value=c.length>4?c.slice(0,4)+'-'+c.slice(4):c});
+  function check(code){r.hidden=false;r.className='card res';r.textContent='Vérification…';go.disabled=true;
+    fetch(base+'/api/v1/public/recu/verifier/?c='+encodeURIComponent(code)).then(function(x){return x.json().catch(function(){return {}}).then(function(d){return {s:x.status,d:d}})}).then(function(o){
+      r.textContent='';var d=o.d||{};
+      if(o.s===200&&d.authentique){r.className='card res ok';r.appendChild(verdict(true,'Reçu authentique','Émis par '+(d.emetteur||'la plateforme')));
+        var dl=el('dl');[['N° de reçu',d.numero],['Date',dfr(d.date)],['Reçu de',d.ecole],['Mode',d.mode]].forEach(function(x){dl.appendChild(el('dt',x[0]));dl.appendChild(el('dd',x[1]))});
+        dl.appendChild(el('dt','Montant'));dl.appendChild(el('dd',fcfa(d.montant),'amt'));dl.appendChild(el('dd',d.montant_lettres,'lettres'));r.appendChild(dl);
+        r.appendChild(el('p','Comparez avec le reçu que vous avez en main : si le numéro, la date ou le montant diffèrent, le document a été modifié.','warn'))}
+      else if(o.s===429){r.className='card res ko';r.appendChild(verdict(false,'Trop d’essais','Patientez une minute, puis réessayez.'))}
+      else{r.className='card res ko';r.appendChild(verdict(false,'Reçu introuvable',d.detail||'Aucun reçu ne correspond à ce code.'))}
+    }).catch(function(){r.className='card res ko';r.textContent='';r.appendChild(verdict(false,'Vérification impossible','Le serveur ne répond pas. Vérifiez votre connexion et réessayez.'))}).then(function(){go.disabled=false})}
+  f.addEventListener('submit',function(e){e.preventDefault();var c=inp.value.replace(/[^A-Z0-9]/gi,'');if(c.length!==8){r.hidden=false;r.className='card res ko';r.textContent='';r.appendChild(verdict(false,'Code incomplet','Le code compte 8 caractères, par exemple 7K3F-Q9XD.'));inp.focus();return}check(inp.value)});
+  if(q.get('c')){inp.value=q.get('c');inp.dispatchEvent(new Event('input'));check(inp.value)}else inp.focus();
+})();
+</script>
+</body>
+</html>

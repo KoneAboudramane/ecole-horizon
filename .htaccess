@@ -1,0 +1,47 @@
+# Site Angular (dossier public du domaine principal, ex. ~/public_html ou ~/ecole.exemple.ci).
+# Remplace le Caddyfile : HTTPS obligatoire, en-têtes de sécurité, compression, cache, routes de l'application.
+
+Options -Indexes
+DirectoryIndex index.html
+AddType application/manifest+json .webmanifest
+AddDefaultCharset utf-8
+
+RewriteEngine On
+
+# 1. Toujours en HTTPS (le certificat est fourni par AutoSSL de cPanel)
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# 2. Fichiers sensibles jamais servis (au cas où ils seraient envoyés par erreur)
+RewriteRule (^|/)\.(?!well-known/) - [F]
+RewriteRule \.(env|py|sqlite3|dump|sh|bak|log|map)$ - [F,NC]
+
+# 3. Fichier existant : servi tel quel ; sinon, l'application Angular gère l'adresse
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+RewriteRule ^ index.html [L]
+
+<IfModule mod_headers.c>
+	Header always set Strict-Transport-Security "max-age=31536000"
+	Header always set X-Content-Type-Options "nosniff"
+	Header always set X-Frame-Options "DENY"
+	Header always set Referrer-Policy "same-origin"
+	Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+	# Pages et réglages : toujours la dernière version après une mise à jour
+	<FilesMatch "^(index\.html|plateforme\.html|verifier\.html|config\.js|sw-push\.js|manifest\.webmanifest)$">
+		Header set Cache-Control "no-cache"
+	</FilesMatch>
+	<Files "config.js">
+		Header set Cache-Control "no-store"
+	</Files>
+	# Fichiers compilés dont le nom contient une empreinte (main-ABCD1234.js) : cache long
+	<FilesMatch "-[A-Za-z0-9]{8,}\.(js|css)$">
+		Header set Cache-Control "public, max-age=31536000, immutable"
+	</FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+	AddOutputFilterByType DEFLATE text/html text/css text/plain application/javascript application/json application/manifest+json image/svg+xml
+</IfModule>
