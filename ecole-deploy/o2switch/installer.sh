@@ -53,6 +53,16 @@ if [ "$GARDER" = 0 ]; then
     fi
   fi
   SITE="${SITE#https://}"; SITE="${SITE%/}"; API_HOST="${API_HOST#https://}"; API_HOST="${API_HOST%/}"
+  # Site compilé (branche site-o2switch) dans le dossier du sous-domaine du site
+  if [ ! -d "$SITE_DIR/.git" ]; then
+    echo "Site compilé -> $SITE_DIR"
+    mkdir -p "$SITE_DIR"
+    git -C "$SITE_DIR" init --quiet
+    git -C "$SITE_DIR" remote add origin "$(git -C "$REPO_DIR" remote get-url origin)" 2>/dev/null || true
+    git -C "$SITE_DIR" fetch --quiet origin site-o2switch
+    git -C "$SITE_DIR" checkout --quiet -f -B site-o2switch origin/site-o2switch
+    git -C "$SITE_DIR" branch --quiet --set-upstream-to=origin/site-o2switch site-o2switch
+  fi
   echo "Site : https://$SITE"
   echo "API  : https://$API_HOST"
 
@@ -86,6 +96,7 @@ DATABASE_URL=postgres://$(ENC "$DB_USER"):$(ENC "$DB_PASS")@localhost:5432/$(ENC
 NUM_PROXIES=0
 ADMIN_URL=$ADMIN_URL
 ECOLE_CODE=
+ECOLE_SITE_DIR=$SITE_DIR
 ACCESS_TOKEN_MINUTES=20
 REFRESH_TOKEN_DAYS=1
 LOGIN_MAX_ATTEMPTS=5

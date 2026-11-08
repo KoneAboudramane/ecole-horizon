@@ -9,11 +9,11 @@ set -eu
 
 REPO_URL="https://github.com/KoneAboudramane/ecole-horizon.git"
 REPO_DIR="${REPO_DIR:-$HOME/ecole-horizon}"
-SITE_DIR="${SITE_DIR:-$HOME/ecole-site}"
 O2="$REPO_DIR/ecole-deploy/o2switch"
 APP_DIR="$REPO_DIR/ecole-backend"
+_site_env="$(grep '^ECOLE_SITE_DIR=' "$APP_DIR/.env" 2>/dev/null | cut -d= -f2 || true)"
+SITE_DIR="${SITE_DIR:-${_site_env:-$HOME/ecole-site}}"
 SAUV_DIR="$HOME/sauvegardes-ecole"
-export SITE_DIR
 
 titre() { printf '\n\033[1m== %s ==\033[0m\n' "$*"; }
 ok() { printf '\033[32m%s\033[0m\n' "$*"; }
@@ -63,8 +63,7 @@ installer() {
   command -v git >/dev/null || { erreur "git est absent du serveur"; return 1; }
   echo "1. Code de l'API  -> $REPO_DIR"
   recuperer "$REPO_DIR" main && ok "   OK"
-  echo "2. Site compilé   -> $SITE_DIR"
-  recuperer "$SITE_DIR" site-o2switch && ok "   OK"
+  # le site est placé par l'installateur dans le dossier du sous-domaine du site
   AUTO="${AUTO:-1}" sh "$O2/installer.sh"
   cp "$O2/gerer.sh" "$HOME/gerer.sh.nouveau" && mv "$HOME/gerer.sh.nouveau" "$HOME/gerer.sh" 2>/dev/null || true
 }

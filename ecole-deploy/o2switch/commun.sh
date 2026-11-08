@@ -7,7 +7,8 @@ DEPLOY_DIR="$(cd "$O2_DIR/.." && pwd)"
 APP_DIR="${APP_DIR:-$(cd "$DEPLOY_DIR/../ecole-backend" 2>/dev/null && pwd || echo "$HOME/ecole-backend")}"
 REPO_DIR="$(cd "$APP_DIR/.." && pwd)"
 # Copie du site compilé (branche site-o2switch du dépôt), mise à jour par mise-a-jour.sh
-SITE_DIR="${SITE_DIR:-$HOME/ecole-site}"
+_site_env="$(grep '^ECOLE_SITE_DIR=' "$APP_DIR/.env" 2>/dev/null | cut -d= -f2 || true)"
+SITE_DIR="${SITE_DIR:-${_site_env:-$HOME/ecole-site}}"
 
 # Environnement Python créé par cPanel (« Setup Python App ») : ~/virtualenv/<racine de l'application>/<version>.
 # La racine de l'application peut être le dépôt (ecole-horizon) ou ecole-horizon/ecole-backend.

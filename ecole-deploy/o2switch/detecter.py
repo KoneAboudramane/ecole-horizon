@@ -57,9 +57,29 @@ if not api:
         "« ecole-horizon » doit avoir une « Application URL » (un domaine ou sous-domaine).")
 api = min(api, key=len)  # plusieurs noms pour le même dossier : le plus court
 
-# 2. SITE : domaine dont la racine est ~/ecole-site, sinon sous-domaine libre à créer
+def vide(path):
+    """Dossier absent, vide, ou déjà une copie du site : on peut y mettre le site sans rien écraser d'autre."""
+    try:
+        noms = set(os.listdir(path))
+    except OSError:
+        return True
+    if ".git" in noms and os.path.exists(os.path.join(path, "LISEZMOI.txt")):
+        return True
+    return not (noms - {"cgi-bin", ".well-known", ".htaccess", "index.html", "default.html", "favicon.ico"}) and not (
+        os.path.exists(os.path.join(path, "index.html")) and os.path.getsize(os.path.join(path, "index.html")) > 20000)
+
+
+# 2. SITE : domaine dont la racine est ~/ecole-site ; sinon le sous-domaine déjà créé (vide) ; sinon un nouveau
 site = next((d for d, r in docroots.items() if r == site_dir), "")
 creer = ""
+if not site:
+    principaux = set(racines)
+    candidats = [d for d, r in docroots.items() if d != api and d not in principaux and r != docroots[api] and vide(r)]
+    prefere = api[4:] if api.startswith("api.") else ""
+    candidats.sort(key=lambda d: (d != prefere, "ecole" not in d, len(d)))
+    if candidats:
+        site = candidats[0]
+        site_dir = docroots[site]
 if not site:
     racine = racine_de(api)
     for etiquette in ("ecole", "ecole-horizon", "ecole-site", "site-ecole"):
@@ -70,4 +90,4 @@ if not site:
     if not site:
         out(ERREUR_DETECTION="aucun nom libre pour le site : créez un sous-domaine dont la racine est « ecole-site ».")
 
-out(API_HOST=api, API_ROOT=docroots[api], SITE=site, CREER_SITE=creer)
+out(API_HOST=api, API_ROOT=docroots[api], SITE=site, CREER_SITE=creer, SITE_DIR=site_dir)
