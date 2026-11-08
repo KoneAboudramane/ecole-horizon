@@ -18,3 +18,8 @@ livraison-o2switch/
 # Documents commerciaux et accès de démonstration : restent sur le PC
 *.docx
 *.pdf
+
+# Fichiers créés par cPanel / Passenger sur le serveur
+ecole-backend/tmp/
+ecole-backend/stderr.log
+ecole-backend/public/

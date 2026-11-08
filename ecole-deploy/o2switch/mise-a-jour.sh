@@ -1,23 +1,34 @@
 #!/bin/sh
-# À lancer par SSH après avoir envoyé une nouvelle version de ecole-backend (et à la première installation).
-# Usage :  sh ~/ecole-deploy/o2switch/mise-a-jour.sh
-# Remplace ce que faisait le conteneur Docker au démarrage : dépendances, migrations (+ table du cache), fichiers statiques,
-# vérification de la configuration, redémarrage de l'application.
+# Met à jour la plateforme sur O2switch depuis GitHub, par SSH :
+#   sh ~/ecole-horizon/ecole-deploy/o2switch/mise-a-jour.sh
+# Récupère la dernière version (API + site), sauvegarde, installe les dépendances, applique les migrations
+# (+ table du cache), copie les statiques, vérifie la configuration et redémarre l'application.
 set -eu
+. "$(dirname "$0")/commun.sh"
 
-APP_DIR="${APP_DIR:-$HOME/ecole-backend}"
-# Environnement Python créé par cPanel (« Setup Python App ») : le chemin exact est affiché en haut de la page de l'application.
-VENV="${VENV:-$(ls -d "$HOME"/virtualenv/ecole-backend/3.* 2>/dev/null | sort -V | tail -n 1)}"
+[ -n "$VENV" ] || die "environnement Python introuvable : indiquez VENV=/home/.../virtualenv/.../3.x (chemin affiché dans « Setup Python App »)"
+[ -f "$APP_DIR/.env" ] || die "$APP_DIR/.env absent : lancez d'abord installer.sh"
 
-[ -n "$VENV" ] && [ -f "$VENV/bin/activate" ] || { echo "Environnement Python introuvable : indiquez VENV=/home/.../virtualenv/ecole-backend/3.x" >&2; exit 1; }
-[ -f "$APP_DIR/.env" ] || { echo "$APP_DIR/.env absent (modèle : env.production.example)" >&2; exit 1; }
+# 0. Récupérer la dernière version, puis relancer CE script dans sa nouvelle version
+if [ "${DEJA_A_JOUR:-0}" != 1 ] && [ "${SANS_GIT:-0}" != 1 ]; then
+  if [ -d "$REPO_DIR/.git" ]; then
+    echo "0/6 Récupération de la dernière version depuis GitHub"
+    git -C "$REPO_DIR" checkout -- ecole-backend/passenger_wsgi.py 2>/dev/null || true   # cPanel peut l'avoir réécrit
+    git -C "$REPO_DIR" pull --ff-only || die "mise à jour du code impossible (fichiers modifiés sur le serveur ?  git -C $REPO_DIR status)"
+  fi
+  if [ -d "$SITE_DIR/.git" ]; then
+    echo "   Site : $SITE_DIR"
+    git -C "$SITE_DIR" pull --ff-only || die "mise à jour du site impossible ($SITE_DIR)"
+  fi
+  DEJA_A_JOUR=1 exec sh "$O2_DIR/mise-a-jour.sh"
+fi
 
 . "$VENV/bin/activate"
 cd "$APP_DIR"
 
 echo "1/5 Sauvegarde avant mise à jour"
 if [ "${SANS_SAUVEGARDE:-0}" = 1 ]; then echo "   (première installation : rien à sauvegarder)"
-else sh "$(dirname "$0")/sauvegarde.sh" || { echo "Sauvegarde échouée : mise à jour arrêtée (SANS_SAUVEGARDE=1 pour passer outre)." >&2; exit 1; }; fi
+else sh "$O2_DIR/sauvegarde.sh" || die "sauvegarde échouée : mise à jour arrêtée (SANS_SAUVEGARDE=1 pour passer outre)"; fi
 
 echo "2/5 Dépendances"
 pip install --quiet --upgrade pip
@@ -32,4 +43,5 @@ python manage.py collectstatic --noinput --verbosity 0
 echo "5/5 Vérification et redémarrage"
 python manage.py check --deploy --fail-level ERROR
 mkdir -p tmp && touch tmp/restart.txt
-echo "Terminé. Contrôle :  curl -s https://\$(grep ^ALLOWED_HOSTS .env | cut -d= -f2 | cut -d, -f1)/api/v1/health/"
+API_HOST="$(grep '^ALLOWED_HOSTS=' .env | cut -d= -f2 | cut -d, -f1)"
+echo "Terminé. Contrôle : https://$API_HOST/api/v1/health/"

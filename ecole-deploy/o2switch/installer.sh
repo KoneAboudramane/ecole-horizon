@@ -1,21 +1,21 @@
 #!/bin/sh
 # Installation guidée sur O2switch, à lancer UNE FOIS par SSH après avoir créé l'application Python dans cPanel :
-#   sh ~/ecole-deploy/o2switch/installer.sh
-# Pose quelques questions, écrit ~/ecole-backend/.env (secrets générés), installe l'application,
+#   sh ~/ecole-horizon/ecole-deploy/o2switch/installer.sh
+# Pose quelques questions, écrit ecole-backend/.env (secrets générés), installe l'application,
 # crée les clés des alertes, le lien des photos et l'administrateur de la plateforme.
 set -eu
+. "$(dirname "$0")/commun.sh"
+HERE="$O2_DIR"
 
-APP_DIR="${APP_DIR:-$HOME/ecole-backend}"
-HERE="$(cd "$(dirname "$0")" && pwd)"
-VENV="${VENV:-$(ls -d "$HOME"/virtualenv/ecole-backend/3.* 2>/dev/null | sort -V | tail -n 1)}"
-
-die() { echo "ERREUR : $*" >&2; exit 1; }
 ask() { # ask VARIABLE "Question" "valeur par défaut"
   printf '%s' "$2${3:+ [$3]} : "; read -r _r; [ -n "$_r" ] || _r="${3:-}"; eval "$1=\$_r"; }
 ask_secret() { printf '%s : ' "$2"; stty -echo 2>/dev/null || true; read -r _r; stty echo 2>/dev/null || true; echo; eval "$1=\$_r"; }
 
-[ -f "$APP_DIR/manage.py" ] || die "$APP_DIR/manage.py introuvable : envoyez d'abord ecole-backend dans $APP_DIR"
-[ -n "$VENV" ] && [ -f "$VENV/bin/activate" ] || die "environnement Python introuvable. Créez l'application dans cPanel > Setup Python App (racine : ecole-backend), ou indiquez VENV=/home/.../virtualenv/ecole-backend/3.x"
+[ -f "$APP_DIR/manage.py" ] || die "$APP_DIR/manage.py introuvable"
+[ -n "$VENV" ] && [ -f "$VENV/bin/activate" ] || die "environnement Python introuvable. Créez l'application dans cPanel > Setup Python App (racine : ${APP_DIR#"$HOME"/}), ou indiquez VENV=/home/.../virtualenv/.../3.x"
+# cPanel réécrit passenger_wsgi.py à la création de l'application : on remet celui du projet
+if [ -d "$REPO_DIR/.git" ]; then git -C "$REPO_DIR" checkout -- ecole-backend/passenger_wsgi.py 2>/dev/null || true; fi
+grep -q "config.wsgi" "$APP_DIR/passenger_wsgi.py" 2>/dev/null || die "$APP_DIR/passenger_wsgi.py n'est pas celui du projet : remettez-le (voir le guide)"
 . "$VENV/bin/activate"
 cd "$APP_DIR"
 
@@ -89,7 +89,7 @@ python manage.py shell -c "from django.db import connection; connection.ensure_c
   || die "connexion à la base impossible : vérifiez nom, utilisateur, mot de passe et droits (cPanel > Bases de données PostgreSQL)"
 
 echo; echo "-- Installation (dépendances, migrations, statiques) --"
-SANS_SAUVEGARDE=1 sh "$HERE/mise-a-jour.sh"
+SANS_GIT=1 SANS_SAUVEGARDE=1 sh "$HERE/mise-a-jour.sh"
 
 echo; echo "-- Clés des alertes sur téléphone --"
 if grep -q '^WEBPUSH_PUBLIC_KEY=$' .env; then
@@ -115,6 +115,7 @@ else
   echo "ATTENTION : dossier $API_ROOT absent. Créez le lien à la main :  ln -s $APP_DIR/media <dossier du sous-domaine de l'API>/media"
 fi
 mkdir -p tmp && touch tmp/restart.txt
+mkdir -p "$HOME/sauvegardes-ecole" && chmod 700 "$HOME/sauvegardes-ecole"
 
 echo; echo "-- Administrateur de la plateforme --"
 ask CREER "Créer maintenant le compte administrateur de la plateforme ? (o/n)" "o"
@@ -132,7 +133,7 @@ cat <<EOF
   Portail    : $SITE_URL/plateforme.html
   Admin Django : https://$API_HOST/$ADMIN_URL   (notez cette adresse)
 Étapes restantes :
-  1. Envoyer le dossier « site » dans le dossier du domaine du site (voir GUIDE-O2SWITCH.md, étape 5).
+  1. Vérifier que le site s'ouvre (dossier du site : $SITE_DIR, voir GUIDE-O2SWITCH.md).
   2. Tester l'e-mail :  python manage.py test_email votre.adresse@exemple.com
   3. Programmer la sauvegarde (cPanel > Tâches Cron) :
      sh $HERE/sauvegarde.sh >> \$HOME/sauvegardes-ecole/sauvegarde.log 2>&1
