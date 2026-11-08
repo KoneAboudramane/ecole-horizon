@@ -31,13 +31,16 @@ Double-cliquez sur **`publier-site.bat`** (à la racine du projet). Il compile l
    ni contenir d'apostrophe.
 3. **Autorisation SSH** (outil d'O2switch) : ajoutez votre adresse IP. Ou utilisez le **Terminal** de cPanel.
 
-## Étape 3 : récupérer le code (Terminal ou SSH)
+## Étape 3 : le script de gestion (Terminal ou SSH)
 
+Tout se fait avec **un seul script à menu**, `gerer.sh`. Pour le récupérer, une seule fois :
 ```bash
-cd ~
-git clone https://github.com/KoneAboudramane/ecole-horizon.git ecole-horizon
-git clone -b site-o2switch https://github.com/KoneAboudramane/ecole-horizon.git ecole-site
+curl -fsSL https://raw.githubusercontent.com/KoneAboudramane/ecole-horizon/main/ecole-deploy/o2switch/gerer.sh -o ~/gerer.sh
 ```
+Ensuite, à chaque fois : `sh ~/gerer.sh`. Menu : installer, mettre à jour, sauvegarder, restaurer, état, erreurs,
+redémarrer, sauvegarde automatique, test e-mail, administrateurs. L'option **1. Installer** récupère le code
+(`~/ecole-horizon`) et le site (`~/ecole-site`) depuis GitHub, même si cPanel a déjà créé le dossier, puis lance
+l'installation (étape 6).
 
 ## Étape 4 : les deux adresses (cPanel → Domaines)
 
@@ -51,7 +54,7 @@ Domaine acheté ailleurs qu'O2switch : ses DNS doivent pointer vers O2switch.
 ## Étape 5 : l'application Python (cPanel → Setup Python App → Create Application)
 
 - Python version : **3.12** (ou la plus récente entre 3.10 et 3.13) ;
-- Application root : **`ecole-horizon/ecole-backend`** ;
+- Application root : **`ecole-horizon`** (`ecole-horizon/ecole-backend` fonctionne aussi) ;
 - Application URL : **`api.ecole.mondomaine.ci`** ;
 - Application startup file : **`passenger_wsgi.py`** ; Application Entry point : **`application`**.
 
@@ -59,10 +62,7 @@ Cliquez **Create**. Si cPanel réécrit `passenger_wsgi.py`, l'installateur le r
 
 ## Étape 6 : installation (Terminal ou SSH)
 
-```bash
-sh ~/ecole-horizon/ecole-deploy/o2switch/installer.sh
-```
-Le script demande l'adresse du site, la base et l'e-mail, puis il :
+`sh ~/gerer.sh` → **1. Installer**. Le script demande l'adresse du site, la base et l'e-mail, puis il :
 - écrit `ecole-backend/.env`, avec la clé secrète et l'adresse d'administration générées, et le protège ;
 - vérifie la connexion à PostgreSQL ;
 - installe les dépendances, crée les tables (et le cache partagé), copie les fichiers statiques et vérifie la configuration ;
