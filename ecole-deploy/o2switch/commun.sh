@@ -60,7 +60,7 @@ u = urllib.parse.urlsplit(url)
 if not u.scheme.startswith("postgres"):
     sys.exit("DATABASE_URL n'est pas une base PostgreSQL")
 q = lambda v: shlex.quote(urllib.parse.unquote(v or ""))
-print(f"export PGHOST={q(u.hostname or 'localhost')} PGPORT={q(str(u.port or 5432))} "
+print(f"export PGHOST={q(u.hostname or '')} PGPORT={q(str(u.port or 5432))} "
       f"PGUSER={q(u.username)} PGPASSWORD={q(u.password)} PGDATABASE={q(u.path.lstrip('/'))}")
 PY
 )"

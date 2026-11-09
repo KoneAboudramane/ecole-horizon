@@ -114,8 +114,24 @@ python -c "import django" || die "Django n'est pas installé dans $VENV"
 echo "OK"
 
 etape "Connexion à la base"
-python manage.py shell -c "from django.db import connection; connection.ensure_connection(); print('PostgreSQL', connection.pg_version // 10000 if connection.vendor == 'postgresql' else connection.vendor, ': connexion OK')" \
-  || die "connexion à la base impossible. Dans cPanel > Bases de données PostgreSQL : vérifiez le mot de passe et que l'utilisateur est AJOUTÉ à la base avec tous les droits. Puis relancez."
+tester_base() {
+  python manage.py shell -c "from django.db import connection; connection.ensure_connection(); print('PostgreSQL', connection.pg_version // 10000, ': connexion OK')" \
+    > /tmp/ecole-base-$$.log 2>&1
+}
+if ! tester_base; then
+  # cPanel autorise parfois seulement le socket local (sans « localhost ») : on essaie automatiquement
+  if grep -q '@localhost:5432/' .env; then
+    sed 's#@localhost:5432/#@/#' .env > .env.tmp && mv .env.tmp .env && chmod 600 .env
+    tester_base || true
+  fi
+fi
+if grep -q "connexion OK" /tmp/ecole-base-$$.log 2>/dev/null; then
+  cat /tmp/ecole-base-$$.log; rm -f /tmp/ecole-base-$$.log
+else
+  echo "Raison : $(grep -E 'FATAL|authentification|password|n.existe pas|does not exist' /tmp/ecole-base-$$.log | head -n 1)"
+  rm -f /tmp/ecole-base-$$.log
+  die "PostgreSQL refuse la connexion. Dans cPanel > « Bases de données PostgreSQL », section « Ajouter un utilisateur à une base de données » : choisissez l'utilisateur $(grep '^DATABASE_URL=' .env | sed 's#.*://##;s#:.*##') et la base, cliquez « Ajouter » (tous les privilèges). Puis relancez :  sh ~/gerer.sh installer"
+fi
 
 etape "Installation (dépendances, tables, fichiers statiques) : quelques minutes"
 SANS_GIT=1 SANS_SAUVEGARDE=1 sh "$HERE/mise-a-jour.sh"
