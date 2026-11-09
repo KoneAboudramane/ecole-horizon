@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
@@ -203,6 +204,8 @@ class PhotoView(APIView):
 class PasswordView(APIView):
     @extend_schema(request=PasswordChangeSerializer, responses={204: None})
     def post(self, request):
+        if settings.DEMO_INSTANCE:
+            return Response(DEMO_PW, status=403)
         s = PasswordChangeSerializer(data=request.data, context={"request": request})
         s.is_valid(raise_exception=True)
         u = request.user
@@ -243,6 +246,7 @@ def is_manager(user) -> bool:
 
 
 DENIED = {"detail": "Les comptes de la direction et du fondateur ne sont pas gérés par le service informatique."}
+DEMO_PW = {"detail": "Démonstration : les comptes et leurs mots de passe ne se modifient pas (tout est remis à zéro chaque nuit)."}
 OUT_OF_SCOPE = {"detail": "Ce compte concerne un cursus hors de votre périmètre : il est géré par la direction de ce cursus ou de l’école."}
 
 
@@ -415,6 +419,8 @@ class ResetPasswordView(APIView):
 
     @extend_schema(request=None, responses={200: {"type": "object"}})
     def post(self, request, pk):
+        if settings.DEMO_INSTANCE:
+            return Response(DEMO_PW, status=403)
         user = generics.get_object_or_404(User, pk=pk)
         if not may_manage(request.user, user.role):
             return Response(DENIED, status=403)
@@ -436,6 +442,8 @@ class ToggleActiveView(APIView):
 
     @extend_schema(request=None, responses=UserSerializer)
     def post(self, request, pk):
+        if settings.DEMO_INSTANCE:
+            return Response(DEMO_PW, status=403)
         user = generics.get_object_or_404(User, pk=pk)
         if not may_manage(request.user, user.role):
             return Response(DENIED, status=403)

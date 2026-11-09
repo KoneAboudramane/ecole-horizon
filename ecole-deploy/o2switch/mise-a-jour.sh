@@ -28,6 +28,7 @@ cd "$APP_DIR"
 
 echo "1/5 Sauvegarde avant mise à jour"
 if [ "${SANS_SAUVEGARDE:-0}" = 1 ]; then echo "   (première installation : rien à sauvegarder)"
+elif grep -q '^DEMO_INSTANCE=True' .env; then echo "   (démonstration : pas de sauvegarde, remise à zéro chaque nuit)"
 else sh "$O2_DIR/sauvegarde.sh" || die "sauvegarde échouée : mise à jour arrêtée (SANS_SAUVEGARDE=1 pour passer outre)"; fi
 
 echo "2/5 Dépendances"

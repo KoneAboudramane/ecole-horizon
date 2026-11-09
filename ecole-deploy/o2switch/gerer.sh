@@ -214,5 +214,15 @@ case "${1:-menu}" in
   erreurs) erreurs;;
   redemarrer) redemarrer;;
   adresse-admin) adresse_admin "${2:-}";;
-  *) echo "Usage : sh $0 [installer|mise-a-jour|sauvegarder|restaurer|etat|erreurs|redemarrer|adresse-admin NOM]"; exit 1;;
+  # Démonstration : même code, dossier ~/ecole-demo, sa propre base et sa propre adresse (application Python « ecole-demo »)
+  installer-demo) REPO_DIR="$HOME/ecole-demo" DEMO=1 exec sh "$0" installer;;
+  mise-a-jour-demo) REPO_DIR="$HOME/ecole-demo" exec sh "$0" mise-a-jour;;
+  etat-demo) REPO_DIR="$HOME/ecole-demo" exec sh "$0" etat;;
+  erreurs-demo) REPO_DIR="$HOME/ecole-demo" exec sh "$0" erreurs;;
+  reinit-demo)
+    REPO_DIR="$HOME/ecole-demo"; APP_DIR="$REPO_DIR/ecole-backend"; O2="$REPO_DIR/ecole-deploy/o2switch"
+    titre "Remise à zéro de la démonstration (2 à 5 minutes)"
+    django demo_presentation --reinitialiser && redemarrer;;
+  *) echo "Usage : sh $0 [installer|mise-a-jour|sauvegarder|restaurer|etat|erreurs|redemarrer|adresse-admin NOM"
+     echo "                 |installer-demo|mise-a-jour-demo|etat-demo|erreurs-demo|reinit-demo]"; exit 1;;
 esac

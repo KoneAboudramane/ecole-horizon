@@ -208,6 +208,10 @@ if not DEBUG:
     if env.bool("MOBILE_MONEY_SANDBOX", default=False):
         raise RuntimeError("MOBILE_MONEY_SANDBOX doit rester désactivé en production.")
 
+# Installation de démonstration (commande demo_presentation) : comptes au mot de passe « demo », non modifiables.
+# Jamais sur la plateforme réelle.
+DEMO_INSTANCE = env.bool("DEMO_INSTANCE", default=False)
+
 # Préfixe des matricules (HZ26-0001)
 MATRICULE_PREFIX = env("MATRICULE_PREFIX", default="HZ")
 

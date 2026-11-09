@@ -146,3 +146,27 @@ Erreurs : `~/ecole-horizon/ecole-backend/stderr.log`.
 - [ ] IP correcte dans le journal
 - [ ] Tâche cron de sauvegarde active, une restauration essayée, une copie hors d'O2switch
 - [ ] Mots de passe provisoires changés
+
+---
+
+## Démonstration (deux écoles fictives : Mali et Côte d'Ivoire)
+
+Une installation **séparée** de la plateforme réelle, avec sa propre adresse et sa propre base, remise à zéro chaque nuit.
+Deux écoles sur trois années (deux années passées en archives + l'année en cours) : notes, bulletins, absences,
+paiements, emplois du temps, devoirs, messages, examen blanc (DEF / BEPC).
+
+1. cPanel → **Domaines** : créez `demo.digi-ba.com`.
+2. cPanel → **Bases de données MySQL** : créez la base `demo` et un utilisateur, puis **ajoutez l'utilisateur à la base**
+   (tous les privilèges).
+3. cPanel → **Setup Python App** : Python 3.13, Application root **`ecole-demo`**, Application URL **`demo.digi-ba.com`**.
+4. Terminal : `sh ~/gerer.sh installer-demo` (le mot de passe de la base est demandé une fois).
+
+Liens à partager :
+- Mali : `https://demo.digi-ba.com/?ecole=demo-mali`
+- Côte d'Ivoire : `https://demo.digi-ba.com/?ecole=demo-ci`
+
+Comptes de chaque école, mot de passe **demo** : `directeur`, `fondateur`, `secretariat`, `comptable`, `enseignant`,
+`educateur`, `informatique`, `parent` (deux enfants), `eleve` (présente depuis trois ans).
+Les mots de passe et les comptes ne se modifient pas sur la démonstration.
+
+Autres commandes : `sh ~/gerer.sh mise-a-jour-demo`, `etat-demo`, `erreurs-demo`, `reinit-demo` (remise à zéro immédiate).

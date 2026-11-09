@@ -62,7 +62,8 @@ if [ "$GARDER" = 0 ]; then
   echo "Adresse : https://$API_HOST  (site + API)"
 
   etape "Base de données ($DB_TYPE)"
-  ask DB_NAME "Nom de la base" "$(id -un)_ecole-horizon"
+  if [ "${DEMO:-0}" = 1 ]; then ask DB_NAME "Nom de la base de la démonstration" "$(id -un)_demo"
+  else ask DB_NAME "Nom de la base" "$(id -un)_ecole-horizon"; fi
   ask DB_USER "Utilisateur de la base" "$DB_NAME"
   ask_secret DB_PASS "Mot de passe de la base"
   [ -n "$DB_PASS" ] || die "mot de passe de la base vide (DB_PASS)"
@@ -92,9 +93,10 @@ NUM_PROXIES=0
 ADMIN_URL=$ADMIN_URL
 ECOLE_CODE=
 ECOLE_SITE_ROOT=$SITE_PUBLIC
+DEMO_INSTANCE=$([ "${DEMO:-0}" = 1 ] && echo True || echo False)
 ACCESS_TOKEN_MINUTES=20
 REFRESH_TOKEN_DAYS=1
-LOGIN_MAX_ATTEMPTS=5
+LOGIN_MAX_ATTEMPTS=$([ "${DEMO:-0}" = 1 ] && echo 50 || echo 5)
 LOGIN_LOCK_MINUTES=15
 MATRICULE_PREFIX=$PREFIX
 MOBILE_MONEY_WEBHOOK_SECRET=
@@ -199,6 +201,30 @@ fi
 uapi SSL start_autossl_check >/dev/null 2>&1 && echo "Certificats HTTPS demandés (prêts en 5 à 30 minutes)." || true
 redemarrer
 mkdir -p "$HOME/sauvegardes-ecole" && chmod 700 "$HOME/sauvegardes-ecole"
+
+if [ "${DEMO:-0}" = 1 ]; then
+  etape "Écoles de démonstration (Mali et Côte d'Ivoire, 3 années) : 2 à 5 minutes"
+  python manage.py demo_presentation --reinitialiser || die "création de la démonstration impossible (voir ci-dessus)"
+  # Remise à zéro automatique chaque nuit à 3 h (les visiteurs modifient les données)
+  LIGNE="0 3 * * * cd $APP_DIR && $VENV/bin/python manage.py demo_presentation --reinitialiser >> $REPO_DIR/demo-reinit.log 2>&1 && touch $PASSENGER_ROOT/tmp/restart.txt"
+  if ! crontab -l 2>/dev/null | grep -q "demo_presentation"; then
+    { crontab -l 2>/dev/null; echo "$LIGNE"; } | crontab - 2>/dev/null && echo "Remise à zéro programmée chaque nuit à 3 h." \
+      || echo "ATTENTION : ajoutez dans cPanel > Tâches Cron (chaque nuit) :  $LIGNE"
+  fi
+  redemarrer
+  SITE_URL="$(grep '^PUBLIC_BASE_URL=' .env | cut -d= -f2)"
+  cat <<EOF
+
+=========== Démonstration prête ===========
+  Mali          : $SITE_URL/?ecole=demo-mali
+  Côte d'Ivoire : $SITE_URL/?ecole=demo-ci
+  Comptes (mot de passe : demo) : directeur, fondateur, secretariat, comptable,
+                                  enseignant, educateur, informatique, parent, eleve
+  Tout est remis à zéro chaque nuit.
+===========================================
+EOF
+  exit 0
+fi
 
 etape "Administrateur de la plateforme"
 if python manage.py shell -c "from apps.accounts.models import User; import sys; sys.exit(0 if User.all_objects.filter(etablissement__isnull=True, is_superuser=True).exists() else 1)" 2>/dev/null; then
