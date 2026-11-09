@@ -45,4 +45,20 @@ def test_deux_ecoles_sur_trois_annees(settings):
         st = Student.all_objects.get(user=eleve)
         assert Enrollment.all_objects.filter(student=st).count() == 3            # présente depuis trois ans : archives à montrer
         assert Student.all_objects.filter(etablissement=etab, parent=st.parent).count() == 2
+        # Toutes les classes ont un emploi du temps et un cahier de textes ; aucun enseignant à deux endroits à la fois
+        from apps.academics.models import SchoolClass, TeachingAssignment
+        from apps.mockexams.models import MockSession
+        from apps.schedule.models import Cell, TextEntry
+        prof = {(a.school_class_id, a.subject_id): a.teacher_id for a in TeachingAssignment.all_objects.filter(etablissement=etab)}
+        vus = set()
+        for cell in Cell.all_objects.filter(etablissement=etab):
+            cle = (prof[(cell.school_class_id, cell.subject_id)], cell.day, cell.slot)
+            assert cle not in vus, f"conflit d'enseignant {cle}"
+            vus.add(cle)
+        for cl in SchoolClass.all_objects.filter(etablissement=etab):
+            assert Cell.all_objects.filter(school_class=cl).count() >= 15, cl.name
+            assert TextEntry.all_objects.filter(school_class=cl).exists(), cl.name
+        assert MockSession.all_objects.filter(etablissement=etab, name="BAC blanc", published=True).exists()
+        ens = User.all_objects.get(etablissement=etab, username="enseignant")
+        assert st.school_class.prof_principal.user_id == ens.pk
     assert not Etablissement.objects.filter(actif=True).exclude(code__startswith="demo-").exists()

@@ -39,11 +39,11 @@ MALI = {
     "niveaux": [("7e", "college", False), ("8e", "college", False), ("9e", "college", False),
                 ("10e", "lycee", False), ("11e", "lycee", True), ("12e", "lycee", True)],
     "series": {"11e": [("S", "Sciences"), ("SES", "Sciences économiques et sociales"), ("L", "Lettres")],
-               "12e": [("SE", "Sciences exactes"), ("SExp", "Sciences expérimentales"), ("SEco", "Sciences économiques"), ("LL", "Langues et lettres")]},
-    "classes": ["7e A", "8e A", "9e A", "10e A", "11e S", "11e SES", "11e L", "12e SE", "12e SExp", "12e SEco", "12e LL"],
+               "12e": [("SE", "Sciences exactes"), ("SEXP", "Sciences expérimentales"), ("SECO", "Sciences économiques"), ("LL", "Langues et lettres")]},
+    "classes": ["7e A", "8e A", "9e A", "10e A", "11e S", "11e SES", "11e L", "12e SE", "12e SEXP", "12e SECO", "12e LL"],
     "entree": ["7e A"],
     # 10e commune → séries de 11e → séries de 12e (choix de la direction au passage)
-    "passages": {"10e A": ["11e S", "11e SES", "11e L"], "11e S": ["12e SE", "12e SExp"], "11e SES": ["12e SEco"], "11e L": ["12e LL"]},
+    "passages": {"10e A": ["11e S", "11e SES", "11e L"], "11e S": ["12e SE", "12e SEXP"], "11e SES": ["12e SECO"], "11e L": ["12e LL"]},
     "matieres": [("fr", "Français", "Fran."), ("ma", "Mathématiques", "Maths"), ("an", "Anglais", "Angl."), ("hg", "Histoire-Géographie", "HG"),
                  ("bio", "Biologie", "Bio."), ("pc", "Physique-Chimie", "PC"), ("ecm", "Éducation civique et morale", "ECM"),
                  ("eps", "EPS", "EPS"), ("ph", "Philosophie", "Philo"), ("eco", "Économie", "Éco."), ("ar", "Arabe", "Arabe")],
@@ -51,11 +51,11 @@ MALI = {
               "9e": dict(fr=4, ma=4, an=2, hg=2, bio=2, pc=2, ecm=1, eps=1), "10e": dict(fr=3, ma=3, an=2, hg=2, bio=2, pc=2, ecm=1, eps=1),
               "11e S": dict(ma=4, pc=4, bio=3, fr=2, an=2, hg=1, ph=1, eps=1), "11e SES": dict(eco=4, ma=3, hg=3, fr=2, an=2, ph=2, eps=1),
               "11e L": dict(fr=4, ph=3, hg=3, an=3, ar=2, ma=1, eps=1), "12e SE": dict(ma=5, pc=4, bio=2, ph=2, fr=2, an=2, eps=1),
-              "12e SExp": dict(bio=5, pc=4, ma=3, ph=2, fr=2, an=2, eps=1), "12e SEco": dict(eco=5, ma=3, hg=3, ph=2, fr=2, an=2, eps=1),
+              "12e SEXP": dict(bio=5, pc=4, ma=3, ph=2, fr=2, an=2, eps=1), "12e SECO": dict(eco=5, ma=3, hg=3, ph=2, fr=2, an=2, eps=1),
               "12e LL": dict(fr=5, ph=4, hg=3, an=3, ar=2, eps=1)},
     "examens": [("DEF", ["9e"], False, {"*": {"fr": 3, "ma": 3, "an": 2, "hg": 2, "bio": 2, "pc": 2, "ecm": 1}}),
-                ("BAC", ["12e"], True, {"SE": {"ma": 5, "pc": 4, "bio": 2, "ph": 2, "fr": 2, "an": 2}, "SExp": {"bio": 5, "pc": 4, "ma": 3, "ph": 2, "fr": 2, "an": 2},
-                                        "SEco": {"eco": 5, "ma": 3, "hg": 3, "ph": 2, "fr": 2, "an": 2}, "LL": {"fr": 5, "ph": 4, "hg": 3, "an": 3, "ar": 2}})],
+                ("BAC", ["12e"], True, {"SE": {"ma": 5, "pc": 4, "bio": 2, "ph": 2, "fr": 2, "an": 2}, "SEXP": {"bio": 5, "pc": 4, "ma": 3, "ph": 2, "fr": 2, "an": 2},
+                                        "SECO": {"eco": 5, "ma": 3, "hg": 3, "ph": 2, "fr": 2, "an": 2}, "LL": {"fr": 5, "ph": 4, "hg": 3, "an": 3, "ar": 2}})],
     "examen_blanc": ("DEF blanc", "DEF", "9e A"),
     "tarifs": [("7e", 25000, 150000), ("8e", 25000, 150000), ("9e", 25000, 160000), ("10e", 30000, 175000), ("11e", 30000, 185000), ("12e", 30000, 200000)],
     "personnel": [("fondateur", "fondateur", "M. Traoré Mamadou"), ("directeur", "directeur", "M. Keïta Boubacar"),
@@ -222,18 +222,40 @@ class Ecole:
         # Personnel et enseignants
         for username, role, name in c["personnel"]:
             self.compte(username, role, name)
-        self.prof_de = {}
-        for username, name, codes in c["enseignants"]:
-            t = Teacher.objects.get(user=self.compte(username, "enseignant", name))
-            t.subjects.set([self.matieres[x] for x in codes])
-            for x in codes:
-                self.prof_de[x] = t
         self.matieres_de = defaultdict(list)          # groupe -> matières (avec coefficient)
+        self.heures = {}                              # (groupe, matière) -> heures par semaine (d'après le coefficient)
         for co in Coefficient.objects.select_related("subject"):
             self.matieres_de[co.groupe].append(co.subject)
-        for cl in SchoolClass.objects.all():
+            self.heures[(co.groupe, co.subject.code)] = max(1, min(5, co.value))
+        # Un professeur par matière pour chaque groupe de 4 classes (dans l'ordre de la configuration) : un emploi du temps
+        # sans conflit reste possible. Le premier groupe a les enseignants nommés (dont le compte « enseignant » en maths,
+        # professeur de la classe de l'élève de démonstration : 9e A / 4e A).
+        classes = [SchoolClass.objects.get(name=n) for n in c["classes"]]
+        self.prof = {}                                # (classe, matière) -> enseignant
+        rng = random.Random(f"{c['code']}-profs")
+        for g in range(0, len(classes), 4):
+            groupe = classes[g:g + 4]
+            for username, name, codes in c["enseignants"]:
+                if g == 0:
+                    u = self.compte(username, "enseignant", name)
+                else:
+                    sexe = rng.choice("MF")
+                    nom = f"{'M.' if sexe == 'M' else 'Mme'} {rng.choice(c['noms']).title()} {rng.choice(c['prenoms_m'] if sexe == 'M' else c['prenoms_f'])}"
+                    base = username if username != "enseignant" else "prof.maths"
+                    u = self.compte(f"{base}{g // 4 + 1}", "enseignant", nom)
+                t = Teacher.objects.get(user=u)
+                t.subjects.set([self.matieres[x] for x in codes])
+                for cl in groupe:
+                    for x in codes:
+                        self.prof[(cl.pk, x)] = t
+        for cl in classes:
+            if not self.matieres_de[cl.groupe]:
+                raise CommandError(f"{c['code']} : la classe {cl.name} (groupe « {cl.groupe} ») n'a aucune matière : vérifiez les coefficients.")
             for subj in self.matieres_de[cl.groupe]:
-                TeachingAssignment.objects.create(school_class=cl, subject=subj, teacher=self.prof_de[subj.code])
+                TeachingAssignment.objects.create(school_class=cl, subject=subj, teacher=self.prof[(cl.pk, subj.code)])
+            # Professeur principal : le professeur de français de la classe (celle de l'élève de démo : « enseignant »)
+            cl.prof_principal = self.prof.get((cl.pk, "fr"))
+            cl.save(update_fields=["prof_principal"])
 
     def compte(self, username, role, name):
         u = User(username=username, role=role, full_name=name, email=f"{username}@{self.cfg['code']}.demo", must_change_password=False)
@@ -313,7 +335,7 @@ class Ecole:
                         if en_cours and quand > today:
                             continue
                         ev = Evaluation.objects.create(school_class=cl, subject=subj, term=term, type=typ, title=titre, date=quand,
-                                                       published=True, teacher=self.prof_de.get(subj.code))
+                                                       published=True, teacher=self.prof.get((cl.pk, subj.code)))
                         notes += [Grade(etablissement=self.etab, evaluation=ev, student=st, value=self.note(st.pk)) for st in eleves[cl.pk]]
                 if term.end < today:          # trimestre terminé : appréciations et avis du conseil
                     for k, st in enumerate(eleves[cl.pk]):
@@ -424,6 +446,30 @@ class Ecole:
         cl.prof_principal = Teacher.objects.get(user__username="enseignant")
         cl.save(update_fields=["prof_principal"])
 
+    def emploi_du_temps(self, classes):
+        """Emploi du temps de chaque classe, sans conflit : un enseignant n'est jamais dans deux classes au même créneau,
+        chaque classe a sa salle, chaque matière a ses heures (d'après le coefficient), au plus deux heures par jour."""
+        from apps.schedule.models import Cell
+        ouverts = (SchoolSettings.load().horaires or {}).get("ouverts") or [8, 8, 5, 8, 8, 4, 0]
+        creneaux = [(d, s) for s in range(max(ouverts)) for d in range(6) if s < ouverts[d]]   # matinées d'abord, réparties sur la semaine
+        occupe = set()                          # (enseignant, jour, créneau)
+        cells = []
+        for k, x in enumerate(classes):
+            reste = {s.code: self.heures[(x.groupe, s.code)] for s in self.matieres_de[x.groupe]}
+            par_jour = defaultdict(int)
+            subj = {s.code: s for s in self.matieres_de[x.groupe]}
+            for d, s in creneaux:
+                choix = [code for code, h in reste.items() if h > 0 and par_jour[(d, code)] < 2
+                         and (self.prof[(x.pk, code)].pk, d, s) not in occupe]
+                if not choix:
+                    continue
+                code = max(choix, key=lambda m: (reste[m], -par_jour[(d, m)]))
+                reste[code] -= 1
+                par_jour[(d, code)] += 1
+                occupe.add((self.prof[(x.pk, code)].pk, d, s))
+                cells.append(Cell(etablissement=self.etab, school_class=x, day=d, slot=s, subject=subj[code], room=f"Salle {k + 1}"))
+        Cell.objects.bulk_create(cells, batch_size=500)
+
     def annee_en_cours(self):
         from apps.communication.models import Announcement, Message, Participant, Thread
         from apps.discipline.models import Incident
@@ -435,22 +481,38 @@ class Ecole:
         c, today, rng = self.cfg, self.today, self.rng
         st = self.eleve_demo
         cl = st.school_class
-        classes = [cl, *SchoolClass.objects.filter(name__in=[c["entree"][0], c["examen_blanc"][2]]).exclude(pk=cl.pk)]
-        # Emploi du temps (5 jours, 4 créneaux) et cahier de textes
+        classes = [SchoolClass.objects.get(name=n) for n in c["classes"]]
+        self.emploi_du_temps(classes)
+        # Cahier de textes : les trois derniers jours de classe, pour chaque classe, d'après son emploi du temps
+        jours, d = [], today - datetime.timedelta(days=1)
+        while len(jours) < 3:
+            if d.weekday() < 5:
+                jours.append(d)
+            d -= datetime.timedelta(days=1)
+        entrees = []
+        for x in classes:
+            for jour in jours:
+                vus = set()
+                for cell in Cell.objects.filter(school_class=x, day=jour.weekday()).select_related("subject").order_by("slot"):
+                    if cell.subject_id in vus:
+                        continue
+                    vus.add(cell.subject_id)
+                    entrees.append(TextEntry(etablissement=self.etab, school_class=x, subject=cell.subject, teacher=self.prof.get((x.pk, cell.subject.code)),
+                                             date=jour, content=f"{cell.subject.name} : leçon du chapitre en cours, exercices corrigés en classe.",
+                                             homework="Revoir la leçon et faire les exercices du manuel.", due=today + datetime.timedelta(days=3)))
+        TextEntry.objects.bulk_create(entrees, batch_size=500)
+        now = timezone.now()
+        # Un devoir à rendre par classe (français ou mathématiques, en alternance)
         for k, x in enumerate(classes):
-            matieres = self.matieres_de[x.groupe]
-            for day in range(5):
-                for slot in range(4):
-                    Cell.objects.get_or_create(school_class=x, day=day, slot=slot,
-                                               defaults={"subject": matieres[(k + day * 2 + slot) % len(matieres)], "room": f"Salle {10 + k}"})
-            for i, subj in enumerate(matieres[:4]):
-                TextEntry.objects.create(school_class=x, subject=subj, teacher=self.prof_de.get(subj.code), date=today - datetime.timedelta(days=i + 1),
-                                         content=f"{subj.name} : leçon du chapitre en cours, exercices corrigés en classe.",
-                                         homework="Revoir la leçon et faire les exercices 3 à 6.", due=today + datetime.timedelta(days=3))
+            code = ("fr", "ma")[k % 2]
+            if x.pk == cl.pk or code not in {s.code for s in self.matieres_de[x.groupe]}:
+                continue
+            Assignment.objects.create(school_class=x, subject=self.matieres[code], teacher=self.prof.get((x.pk, code)), kind="fichier",
+                                      title="Rédaction : un souvenir marquant" if code == "fr" else "Série d'exercices n° 3",
+                                      instructions="Rendre la copie photographiée avant la date limite.", due_at=now + datetime.timedelta(days=5), published=True)
         # Devoirs en ligne pour la classe de l'élève de démonstration
         ma = self.matieres["ma"]
-        prof = self.prof_de["ma"]
-        now = timezone.now()
+        prof = self.prof[(cl.pk, "ma")]
         fich = Assignment.objects.create(school_class=cl, subject=ma, teacher=prof, kind="fichier", title="Exercices de géométrie",
                                          instructions="Rendre la copie photographiée avant la date limite.", due_at=now + datetime.timedelta(days=4), published=True)
         ep = Assignment.objects.create(school_class=cl, subject=ma, teacher=prof, kind="epreuve", title="Quiz : calcul littéral",
@@ -488,6 +550,18 @@ class Ecole:
             ms.classes.set([cx])
             MockMark.objects.bulk_create([MockMark(etablissement=self.etab, session=ms, student=x, subject=self.matieres[code], value=self.note(x.pk))
                                           for x in Student.objects.filter(school_class=cx, active=True) for code in ("fr", "ma", "an") if code in self.matieres])
+        # BAC blanc publié pour toutes les classes de terminale (12e / Tle), dans leurs matières principales
+        terminales = [x for x in classes if x.level == c["niveaux"][-1][0]]
+        if terminales:
+            bac = MockSession.objects.create(name="BAC blanc", type="BAC", exam_type=ExamType.objects.filter(name="BAC").first(),
+                                             start=today - datetime.timedelta(days=9), end=today - datetime.timedelta(days=5), published=True)
+            bac.classes.set(terminales)
+            marks = []
+            for x in terminales:
+                principales = sorted(self.matieres_de[x.groupe], key=lambda s: -self.heures[(x.groupe, s.code)])[:4]
+                marks += [MockMark(etablissement=self.etab, session=bac, student=e, subject=s, value=self.note(e.pk))
+                          for e in Student.objects.filter(school_class=x, active=True) for s in principales]
+            MockMark.objects.bulk_create(marks, batch_size=500)
         # Une notification pour la famille de démonstration
         notify([self.parent_demo], f"Bienvenue dans l'espace parents de {c['nom']} (démonstration).")
         _ = rng
