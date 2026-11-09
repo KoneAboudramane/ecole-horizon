@@ -107,6 +107,12 @@ if [ -d "$SITE_DIR/.git" ]; then git -C "$SITE_DIR" pull --ff-only --quiet || tr
 else git clone --quiet -b site-o2switch "$(git -C "$REPO_DIR" remote get-url origin)" "$SITE_DIR"; fi
 echo "Site : $SITE_DIR (servi par l'application)"
 
+etape "Dépendances Python (première fois : quelques minutes)"
+pip install --quiet --upgrade pip || true
+pip install --quiet -r requirements.txt || die "installation des dépendances impossible (voir le message ci-dessus)"
+python -c "import django" || die "Django n'est pas installé dans $VENV"
+echo "OK"
+
 etape "Connexion à la base"
 python manage.py shell -c "from django.db import connection; connection.ensure_connection(); print('PostgreSQL', connection.pg_version // 10000 if connection.vendor == 'postgresql' else connection.vendor, ': connexion OK')" \
   || die "connexion à la base impossible. Dans cPanel > Bases de données PostgreSQL : vérifiez le mot de passe et que l'utilisateur est AJOUTÉ à la base avec tous les droits. Puis relancez."
