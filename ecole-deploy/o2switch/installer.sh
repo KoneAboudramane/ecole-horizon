@@ -9,6 +9,19 @@ set -eu
 . "$(dirname "$0")/commun.sh"
 HERE="$O2_DIR"
 AUTO="${AUTO:-0}"
+# Type de base créée dans cPanel : mysql (MySQL/MariaDB, par défaut) ou postgres
+DB_TYPE="${DB_TYPE:-mysql}"
+case "$DB_TYPE" in mysql|postgres) ;; *) echo "DB_TYPE doit valoir mysql ou postgres" >&2; exit 1;; esac
+
+# url_base UTILISATEUR MOTDEPASSE BASE -> DATABASE_URL (caractères spéciaux encodés)
+url_base() {
+  python3 - "$DB_TYPE" "$1" "$2" "$3" <<'PY'
+import sys, urllib.parse as p
+t, u, pw, db = sys.argv[1:]
+e = lambda v: p.quote(v, safe="")
+print(f"mysql://{e(u)}:{e(pw)}@localhost:3306/{e(db)}" if t == "mysql" else f"postgres://{e(u)}:{e(pw)}@localhost:5432/{e(db)}")
+PY
+}
 
 # ask VARIABLE "Question" "défaut" : garde la valeur déjà fournie ; en AUTO prend le défaut sans demander
 ask() {
@@ -48,7 +61,7 @@ if [ "$GARDER" = 0 ]; then
   API_HOST="${API_HOST#https://}"; API_HOST="${API_HOST%/}"; SITE="$API_HOST"
   echo "Adresse : https://$API_HOST  (site + API)"
 
-  etape "Base PostgreSQL"
+  etape "Base de données ($DB_TYPE)"
   ask DB_NAME "Nom de la base" "$(id -un)_ecole-horizon"
   ask DB_USER "Utilisateur de la base" "$DB_NAME"
   ask_secret DB_PASS "Mot de passe de la base"
@@ -74,7 +87,7 @@ ALLOWED_HOSTS=$API_HOST
 PUBLIC_BASE_URL=https://$SITE
 CORS_ALLOWED_ORIGINS=https://$SITE
 CSRF_TRUSTED_ORIGINS=https://$SITE,https://$API_HOST
-DATABASE_URL=postgres://$(ENC "$DB_USER"):$(ENC "$DB_PASS")@localhost:5432/$(ENC "$DB_NAME")
+DATABASE_URL=$(url_base "$DB_USER" "$DB_PASS" "$DB_NAME")
 NUM_PROXIES=0
 ADMIN_URL=$ADMIN_URL
 ECOLE_CODE=
@@ -114,23 +127,47 @@ python -c "import django" || die "Django n'est pas installé dans $VENV"
 echo "OK"
 
 etape "Connexion à la base"
+# .env d'un essai précédent avec l'autre type de base : on garde utilisateur, mot de passe et nom, on change le type
+python3 - .env "$DB_TYPE" <<'PY'
+import os, sys, urllib.parse as p
+chemin, voulu = sys.argv[1:]
+lignes = open(chemin, encoding="utf-8").read().splitlines()
+for i, l in enumerate(lignes):
+    if l.startswith("DATABASE_URL="):
+        u = p.urlsplit(l.split("=", 1)[1])
+        actuel = "mysql" if u.scheme.startswith("mysql") else "postgres"
+        if actuel != voulu:
+            port = 3306 if voulu == "mysql" else 5432
+            lignes[i] = f"DATABASE_URL={voulu}://{u.username}:{u.password}@localhost:{port}{u.path}"
+            open(chemin, "w", encoding="utf-8").write("\n".join(lignes) + "\n")
+            os.chmod(chemin, 0o600)
+            print(f"Base passée de {actuel} à {voulu} dans .env")
+PY
+LOG="$HOME/.ecole-test-base.log"
 tester_base() {
-  python manage.py shell -c "from django.db import connection; connection.ensure_connection(); print('PostgreSQL', connection.pg_version // 10000, ': connexion OK')" \
-    > /tmp/ecole-base-$$.log 2>&1
+  python manage.py shell -c "from django.db import connection; connection.ensure_connection(); print(connection.vendor, connection.get_database_version(), ': connexion OK')" \
+    > "$LOG" 2>&1
 }
 if ! tester_base; then
-  # cPanel autorise parfois seulement le socket local (sans « localhost ») : on essaie automatiquement
-  if grep -q '@localhost:5432/' .env; then
+  # cPanel n'autorise parfois que le socket local : on essaie automatiquement
+  if [ "$DB_TYPE" = mysql ]; then
+    for s in /var/lib/mysql/mysql.sock /var/run/mysqld/mysqld.sock /tmp/mysql.sock; do
+      [ -S "$s" ] || continue
+      grep -v '^DB_SOCKET=' .env > .env.tmp && echo "DB_SOCKET=$s" >> .env.tmp && mv .env.tmp .env && chmod 600 .env
+      tester_base && break
+    done
+  elif grep -q '@localhost:5432/' .env; then
     sed 's#@localhost:5432/#@/#' .env > .env.tmp && mv .env.tmp .env && chmod 600 .env
     tester_base || true
   fi
 fi
-if grep -q "connexion OK" /tmp/ecole-base-$$.log 2>/dev/null; then
-  cat /tmp/ecole-base-$$.log; rm -f /tmp/ecole-base-$$.log
+if grep -q "connexion OK" "$LOG" 2>/dev/null; then
+  tail -n 1 "$LOG"; rm -f "$LOG"
 else
-  echo "Raison : $(grep -E 'FATAL|authentification|password|n.existe pas|does not exist' /tmp/ecole-base-$$.log | head -n 1)"
-  rm -f /tmp/ecole-base-$$.log
-  die "PostgreSQL refuse la connexion. Dans cPanel > « Bases de données PostgreSQL », section « Ajouter un utilisateur à une base de données » : choisissez l'utilisateur $(grep '^DATABASE_URL=' .env | sed 's#.*://##;s#:.*##') et la base, cliquez « Ajouter » (tous les privilèges). Puis relancez :  sh ~/gerer.sh installer"
+  echo "Raison : $(grep -iE 'FATAL|denied|refus|authenti|password|unknown database|does not exist|n.existe pas|can.t connect' "$LOG" | tail -n 1)"
+  rm -f "$LOG"
+  if [ "$DB_TYPE" = mysql ]; then PAGE="Bases de données MySQL"; else PAGE="Bases de données PostgreSQL"; fi
+  die "la base refuse la connexion. Dans cPanel > « $PAGE » : 1) vérifiez le mot de passe de l'utilisateur ; 2) section « Ajouter un utilisateur à une base de données », choisissez l'utilisateur et la base, « Ajouter », cochez TOUS LES PRIVILÈGES. Puis relancez :  sh ~/gerer.sh installer"
 fi
 
 etape "Installation (dépendances, tables, fichiers statiques) : quelques minutes"

@@ -117,6 +117,19 @@ TIME_ZONE = "Africa/Abidjan"
 USE_I18N = True
 USE_TZ = True
 
+# MySQL / MariaDB (hébergement mutualisé, ex. O2switch) : DATABASE_URL=mysql://utilisateur:motdepasse@localhost:3306/base
+if DATABASES["default"]["ENGINE"].endswith("mysql"):
+    import pymysql  # pilote en pur Python : rien à compiler sur le serveur
+
+    pymysql.install_as_MySQLdb()
+    _opts = DATABASES["default"].setdefault("OPTIONS", {})
+    _opts.update({"charset": "utf8mb4", "init_command": "SET sql_mode='STRICT_TRANS_TABLES'"})
+    if env("DB_SOCKET", default=""):
+        _opts["unix_socket"] = env("DB_SOCKET")
+    # Africa/Abidjan est à UTC+0 toute l'année : valeurs stockées identiques, et les regroupements par jour/mois
+    # n'ont pas besoin des tables de fuseaux horaires de MySQL (souvent absentes : CONVERT_TZ renverrait NULL).
+    DATABASES["default"]["TIME_ZONE"] = TIME_ZONE
+
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"

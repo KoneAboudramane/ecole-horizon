@@ -50,18 +50,35 @@ restaurer_passenger() {
   [ -d "$REPO_DIR/.git" ] && git -C "$REPO_DIR" checkout -- passenger_wsgi.py ecole-backend/passenger_wsgi.py 2>/dev/null || true
 }
 
-# Lit DATABASE_URL dans le .env et exporte les variables de pg_dump / pg_restore
+# Lit DATABASE_URL dans le .env. DB_KIND=mysql : écrit ~/.ecole-mysql.cnf (accès de mysqldump/mysql, chmod 600)
+# et exporte MYSQL_CNF, DB_NAME. DB_KIND=postgres : exporte les variables de pg_dump / pg_restore.
 charger_base() {
   [ -f "$APP_DIR/.env" ] || die "$APP_DIR/.env absent"
-  eval "$(python3 - "$APP_DIR/.env" <<'PY'
-import shlex, sys, urllib.parse
-url = next((l.split("=", 1)[1].strip().strip("'\"") for l in open(sys.argv[1], encoding="utf-8") if l.startswith("DATABASE_URL=")), "")
-u = urllib.parse.urlsplit(url)
-if not u.scheme.startswith("postgres"):
-    sys.exit("DATABASE_URL n'est pas une base PostgreSQL")
+  eval "$(python3 - "$APP_DIR/.env" "$HOME/.ecole-mysql.cnf" <<'PY'
+import os, shlex, sys, urllib.parse
+env = {}
+for l in open(sys.argv[1], encoding="utf-8"):
+    if "=" in l and not l.startswith("#"):
+        k, v = l.split("=", 1)
+        env[k.strip()] = v.strip().strip("'\"")
+u = urllib.parse.urlsplit(env.get("DATABASE_URL", ""))
 q = lambda v: shlex.quote(urllib.parse.unquote(v or ""))
-print(f"export PGHOST={q(u.hostname or '')} PGPORT={q(str(u.port or 5432))} "
-      f"PGUSER={q(u.username)} PGPASSWORD={q(u.password)} PGDATABASE={q(u.path.lstrip('/'))}")
+if u.scheme.startswith("mysql"):
+    esc = lambda v: urllib.parse.unquote(v or "").replace("\\", "\\\\").replace('"', '\\"')
+    lignes = ["[client]", f'user="{esc(u.username)}"', f'password="{esc(u.password)}"']
+    if env.get("DB_SOCKET"):
+        lignes.append(f'socket="{env["DB_SOCKET"]}"')
+    else:
+        lignes += [f"host={u.hostname or 'localhost'}", f"port={u.port or 3306}"]
+    fd = os.open(sys.argv[2], os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    os.write(fd, ("\n".join(lignes) + "\n").encode())
+    os.close(fd)
+    print(f"export DB_KIND=mysql MYSQL_CNF={q(sys.argv[2])} DB_NAME={q(u.path.lstrip('/'))}")
+elif u.scheme.startswith("postgres"):
+    print(f"export DB_KIND=postgres PGHOST={q(u.hostname or '')} PGPORT={q(str(u.port or 5432))} "
+          f"PGUSER={q(u.username)} PGPASSWORD={q(u.password)} PGDATABASE={q(u.path.lstrip('/'))}")
+else:
+    sys.exit("DATABASE_URL : ni MySQL ni PostgreSQL")
 PY
 )"
 }

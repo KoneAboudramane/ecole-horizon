@@ -80,14 +80,14 @@ sauvegarder() { titre "Sauvegarde"; code_present || return 1; sh "$O2/sauvegarde
 restaurer() {
   titre "Restaurer une sauvegarde"
   code_present || return 1
-  set -- $(ls -1t "$SAUV_DIR"/ecole-*.dump 2>/dev/null | head -n 10)
+  set -- $(ls -1t "$SAUV_DIR"/ecole-*.sql.gz "$SAUV_DIR"/ecole-*.dump 2>/dev/null | head -n 10)
   [ $# -gt 0 ] || { attention "Aucune sauvegarde dans $SAUV_DIR"; return 0; }
   i=1; for f in "$@"; do printf '  %2d. %s  (%s)\n' "$i" "$(basename "$f")" "$(du -h "$f" | cut -f1)"; i=$((i+1)); done
   printf 'Numéro de la sauvegarde (vide = annuler) : '; read -r n
   [ -n "$n" ] || return 0
   case "$n" in *[!0-9]*) erreur "numéro invalide"; return 1;; esac
   eval "f=\${$n:-}"; [ -n "$f" ] || { erreur "numéro invalide"; return 1; }
-  m="$SAUV_DIR/media-$(basename "$f" .dump | sed 's/^ecole-//').tar.gz"
+  m="$SAUV_DIR/media-$(basename "$f" | sed 's/^ecole-//;s/\.sql\.gz$//;s/\.dump$//').tar.gz"
   if [ -f "$m" ]; then sh "$O2/restaurer.sh" "$f" "$m"; else sh "$O2/restaurer.sh" "$f"; fi
 }
 
@@ -105,8 +105,8 @@ etat() {
     echo "Site      : $(grep '^PUBLIC_BASE_URL=' "$APP_DIR/.env" | cut -d= -f2)"
     echo "Admin     : https://$h/$(grep '^ADMIN_URL=' "$APP_DIR/.env" | cut -d= -f2)"
   else attention "Réglages  : .env absent (installation à faire)"; fi
-  d="$(ls -1t "$SAUV_DIR"/ecole-*.dump 2>/dev/null | head -n 1)"
-  if [ -n "$d" ]; then echo "Sauvegarde: $(basename "$d") ($(ls "$SAUV_DIR"/ecole-*.dump | wc -l) conservées)"; else attention "Sauvegarde: aucune"; fi
+  d="$(ls -1t "$SAUV_DIR"/ecole-*.sql.gz "$SAUV_DIR"/ecole-*.dump 2>/dev/null | head -n 1)"
+  if [ -n "$d" ]; then echo "Sauvegarde: $(basename "$d") ($(ls "$SAUV_DIR"/ecole-*.sql.gz "$SAUV_DIR"/ecole-*.dump 2>/dev/null | wc -l) conservées)"; else attention "Sauvegarde: aucune"; fi
   if crontab -l 2>/dev/null | grep -q "o2switch/sauvegarde.sh"; then echo "Auto      : sauvegarde quotidienne programmée"; else attention "Auto      : sauvegarde quotidienne NON programmée (option 8)"; fi
   echo "Espace    : $(du -sh "$HOME" 2>/dev/null | cut -f1) utilisés dans $HOME"
 }

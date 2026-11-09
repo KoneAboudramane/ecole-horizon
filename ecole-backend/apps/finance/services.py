@@ -68,13 +68,17 @@ def record_payment(*, student: Student, amount: int, mode: str, date=None, ref: 
         raise ValidationError({"amount": f"Le montant dépasse le solde dû ({fcfa(due)} FCFA).", "code": "surplus", "balance": due, "surplus": surplus})
     detail = fees.payment_detail(student, acc["paid"], amount, today)
     ref = ref.strip()
+    date = date or timezone.localdate()
+    # Le numéro de reçu verrouille la séquence jusqu'à la fin de la transaction : deux encaissements ne peuvent donc pas
+    # vérifier la même référence en même temps. Indispensable sous MySQL, qui ignore la contrainte conditionnelle
+    # « uniq_confirmed_ref » (en cas de refus, l'annulation de la transaction rend aussi le numéro de reçu).
+    receipt_no = next_receipt(date.year)
     if ref and Payment.objects.filter(mode=mode, ref=ref, status="confirme").exists():
         raise ValidationError({"ref": "Cette référence a déjà été encaissée."})
-    date = date or timezone.localdate()
     try:
         with transaction.atomic():
             p = Payment.objects.create(student=student, year=SchoolYear.get_current(), amount=amount, mode=mode, ref=ref, date=date, note=note.strip(),
-                                       receipt_no=next_receipt(date.year), by=by, advance=surplus, detail=detail)
+                                       receipt_no=receipt_no, by=by, advance=surplus, detail=detail)
     except IntegrityError as e:
         raise ValidationError({"ref": "Cette référence a déjà été encaissée."}) from e
     if not silent:

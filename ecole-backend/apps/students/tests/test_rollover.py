@@ -225,7 +225,7 @@ def test_past_year_can_still_be_consulted_with_its_own_roster(users, login, clie
     assert pdf.status_code == 200 and pdf["Content-Type"] == "application/pdf"
     assert client.get(f"/api/v1/classes/{rows['AKA']['class']}/bulletins.pdf?term=T1&year=2026-2027").status_code == 200
     assert client.get("/api/v1/archives/?year=2027-2028").status_code == 400            # l'année en cours n'est pas une archive
-    assert client.get("/api/v1/students/1/bulletin/?term=T1&year=1999-2000").status_code == 400
+    assert client.get(f"/api/v1/students/{world['a'].pk}/bulletin/?term=T1&year=1999-2000").status_code == 400
     # la nouvelle année repart vide : AKA n'a pas de notes en 5e A
     assert client.get(f"/api/v1/students/{world['a'].pk}/bulletin/?term=T1").data["result"]["moyenne"] is None
 
