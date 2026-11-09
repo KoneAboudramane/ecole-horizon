@@ -150,6 +150,20 @@ reset_2fa() { titre "Retirer la double authentification"; printf 'Identifiant : 
 
 console() { titre "Console Django (quitter : exit())"; django shell; }
 
+adresse_admin() { # adresse_admin [NOM] : change l'adresse de l'administration Django (réglage ADMIN_URL du .env)
+  titre "Adresse de l'administration Django"
+  [ -f "$APP_DIR/.env" ] || { erreur ".env absent : installez d'abord"; return 1; }
+  echo "Actuelle : https://$(api_host)/$(grep '^ADMIN_URL=' "$APP_DIR/.env" | cut -d= -f2)"
+  n="${1:-}"
+  if [ -z "$n" ]; then printf 'Nouveau nom (lettres, chiffres, tirets ; vide = annuler) : '; read -r n; fi
+  n="${n#/}"; n="${n%/}"
+  [ -n "$n" ] || return 0
+  case "$n" in *[!a-zA-Z0-9-]*) erreur "lettres, chiffres et tirets uniquement"; return 1;; api|static|media) erreur "nom réservé"; return 1;; esac
+  sed -i "s#^ADMIN_URL=.*#ADMIN_URL=$n/#" "$APP_DIR/.env"
+  redemarrer
+  ok "Nouvelle adresse : https://$(api_host)/$n/"
+}
+
 # ---------------------------------------------------------------- menu
 
 menu() {
@@ -167,6 +181,7 @@ menu() {
     echo " 10. Créer un administrateur de la plateforme"
     echo " 11. Retirer la double authentification d'un compte"
     echo " 12. Console Django (avancé)"
+    echo " 13. Changer l'adresse de l'administration Django"
     echo "  0. Quitter"
     printf 'Votre choix : '; read -r c || exit 0
     case "$c" in
@@ -182,6 +197,7 @@ menu() {
       10) creer_admin || true; pause;;
       11) reset_2fa || true; pause;;
       12) console || true;;
+      13) adresse_admin || true; pause;;
       0|q) exit 0;;
       *) attention "Choix inconnu.";;
     esac
@@ -197,5 +213,6 @@ case "${1:-menu}" in
   etat) etat;;
   erreurs) erreurs;;
   redemarrer) redemarrer;;
-  *) echo "Usage : sh $0 [installer|mise-a-jour|sauvegarder|restaurer|etat|erreurs|redemarrer]"; exit 1;;
+  adresse-admin) adresse_admin "${2:-}";;
+  *) echo "Usage : sh $0 [installer|mise-a-jour|sauvegarder|restaurer|etat|erreurs|redemarrer|adresse-admin NOM]"; exit 1;;
 esac
