@@ -9,6 +9,8 @@ set -eu
 
 REPO_URL="https://github.com/KoneAboudramane/ecole-horizon.git"
 REPO_DIR="${REPO_DIR:-$HOME/ecole-horizon}"
+DEMO_DIR="${DEMO_DIR:-$(cat "$HOME/.ecole-demo-dir" 2>/dev/null || echo "$HOME/ecole-demo")}"
+DEMO_DIR="${DEMO_DIR%/}"
 O2="$REPO_DIR/ecole-deploy/o2switch"
 APP_DIR="$REPO_DIR/ecole-backend"
 SITE_DIR="${SITE_DIR:-$HOME/ecole-site}"
@@ -214,13 +216,14 @@ case "${1:-menu}" in
   erreurs) erreurs;;
   redemarrer) redemarrer;;
   adresse-admin) adresse_admin "${2:-}";;
-  # Démonstration : même code, dossier ~/ecole-demo, sa propre base et sa propre adresse (application Python « ecole-demo »)
-  installer-demo) REPO_DIR="$HOME/ecole-demo" DEMO=1 exec sh "$0" installer;;
-  mise-a-jour-demo) REPO_DIR="$HOME/ecole-demo" exec sh "$0" mise-a-jour;;
-  etat-demo) REPO_DIR="$HOME/ecole-demo" exec sh "$0" etat;;
-  erreurs-demo) REPO_DIR="$HOME/ecole-demo" exec sh "$0" erreurs;;
+  # Démonstration : même code dans un autre dossier (racine de l'application Python de la démo), sa propre base et adresse.
+  # Le dossier choisi à l'installation (DEMO_DIR=…) est mémorisé dans ~/.ecole-demo-dir pour les commandes suivantes.
+  installer-demo) echo "$DEMO_DIR" > "$HOME/.ecole-demo-dir"; REPO_DIR="$DEMO_DIR" DEMO=1 exec sh "$0" installer;;
+  mise-a-jour-demo) REPO_DIR="$DEMO_DIR" exec sh "$0" mise-a-jour;;
+  etat-demo) REPO_DIR="$DEMO_DIR" exec sh "$0" etat;;
+  erreurs-demo) REPO_DIR="$DEMO_DIR" exec sh "$0" erreurs;;
   reinit-demo)
-    REPO_DIR="$HOME/ecole-demo"; APP_DIR="$REPO_DIR/ecole-backend"; O2="$REPO_DIR/ecole-deploy/o2switch"
+    REPO_DIR="$DEMO_DIR"; APP_DIR="$REPO_DIR/ecole-backend"; O2="$REPO_DIR/ecole-deploy/o2switch"
     titre "Remise à zéro de la démonstration (2 à 5 minutes)"
     django demo_presentation --reinitialiser && redemarrer;;
   *) echo "Usage : sh $0 [installer|mise-a-jour|sauvegarder|restaurer|etat|erreurs|redemarrer|adresse-admin NOM"

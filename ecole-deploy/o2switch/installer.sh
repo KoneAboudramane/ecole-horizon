@@ -62,9 +62,16 @@ if [ "$GARDER" = 0 ]; then
   echo "Adresse : https://$API_HOST  (site + API)"
 
   etape "Base de données ($DB_TYPE)"
-  if [ "${DEMO:-0}" = 1 ]; then ask DB_NAME "Nom de la base de la démonstration" "$(id -un)_demo"
-  else ask DB_NAME "Nom de la base" "$(id -un)_ecole-horizon"; fi
-  ask DB_USER "Utilisateur de la base" "$DB_NAME"
+  if [ "${DEMO:-0}" = 1 ]; then
+    # Démonstration : nom de la base et utilisateur toujours demandés (noms choisis librement dans cPanel)
+    _auto="$AUTO"; AUTO=0
+    ask DB_NAME "Nom de la base MySQL de la démonstration" "$(id -un)_demo"
+    ask DB_USER "Utilisateur MySQL de cette base" "$DB_NAME"
+    AUTO="$_auto"
+  else
+    ask DB_NAME "Nom de la base" "$(id -un)_ecole-horizon"
+    ask DB_USER "Utilisateur de la base" "$DB_NAME"
+  fi
   ask_secret DB_PASS "Mot de passe de la base"
   [ -n "$DB_PASS" ] || die "mot de passe de la base vide (DB_PASS)"
   echo "Base : $DB_NAME  /  utilisateur : $DB_USER"
