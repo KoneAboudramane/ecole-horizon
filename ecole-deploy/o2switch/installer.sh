@@ -176,7 +176,7 @@ else
   echo "Raison : $(grep -iE 'FATAL|denied|refus|authenti|password|unknown database|does not exist|n.existe pas|can.t connect' "$LOG" | tail -n 1)"
   rm -f "$LOG"
   if [ "$DB_TYPE" = mysql ]; then PAGE="Bases de données MySQL"; else PAGE="Bases de données PostgreSQL"; fi
-  die "la base refuse la connexion. Dans cPanel > « $PAGE » : 1) vérifiez le mot de passe de l'utilisateur ; 2) section « Ajouter un utilisateur à une base de données », choisissez l'utilisateur et la base, « Ajouter », cochez TOUS LES PRIVILÈGES. Puis relancez :  sh ~/gerer.sh installer"
+  die "la base refuse la connexion. Dans cPanel > « $PAGE » : 1) vérifiez le mot de passe de l'utilisateur ; 2) section « Ajouter un utilisateur à une base de données », choisissez l'utilisateur et la base, « Ajouter », cochez TOUS LES PRIVILÈGES. Puis relancez :  sh ~/gerer.sh $([ "${DEMO:-0}" = 1 ] && echo installer-demo || echo installer)"
 fi
 
 etape "Installation (dépendances, tables, fichiers statiques) : quelques minutes"
