@@ -27,3 +27,7 @@ ecole-backend/public/
 /tmp/
 /stderr.log
 /public/
+
+# Copie du site servie par Django (O2switch)
+ecole-backend/site_public/
+ecole-backend/site_public.*/

@@ -11,8 +11,7 @@ REPO_URL="https://github.com/KoneAboudramane/ecole-horizon.git"
 REPO_DIR="${REPO_DIR:-$HOME/ecole-horizon}"
 O2="$REPO_DIR/ecole-deploy/o2switch"
 APP_DIR="$REPO_DIR/ecole-backend"
-_site_env="$(grep '^ECOLE_SITE_DIR=' "$APP_DIR/.env" 2>/dev/null | cut -d= -f2 || true)"
-SITE_DIR="${SITE_DIR:-${_site_env:-$HOME/ecole-site}}"
+SITE_DIR="${SITE_DIR:-$HOME/ecole-site}"
 SAUV_DIR="$HOME/sauvegardes-ecole"
 
 titre() { printf '\n\033[1m== %s ==\033[0m\n' "$*"; }

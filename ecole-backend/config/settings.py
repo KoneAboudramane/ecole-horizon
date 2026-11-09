@@ -126,6 +126,25 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
 
+# Site Angular servi par Django (WhiteNoise) sur la même adresse que l'API : hébergement à une seule adresse (O2switch).
+# Dossier des fichiers compilés, sans .git (copié par les scripts O2switch). Vide : le site est servi ailleurs (Caddy…).
+ECOLE_SITE_ROOT = env("ECOLE_SITE_ROOT", default="")
+if ECOLE_SITE_ROOT:
+    WHITENOISE_ROOT = ECOLE_SITE_ROOT
+    WHITENOISE_INDEX_FILE = True  # « / » sert index.html
+    WHITENOISE_MIMETYPES = {".webmanifest": "application/manifest+json"}
+
+    def _entetes_site(headers, path, url):
+        """En-têtes des fichiers du site (WhiteNoise répond avant les middlewares de Django)."""
+        headers["X-Frame-Options"] = "DENY"
+        headers["Referrer-Policy"] = "same-origin"
+        headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        nom = url.rsplit("/", 1)[-1]
+        if nom in ("", "index.html", "plateforme.html", "verifier.html", "config.js", "sw-push.js", "manifest.webmanifest"):
+            headers["Cache-Control"] = "no-cache"  # toujours la dernière version après une mise à jour
+
+    WHITENOISE_ADD_HEADERS_FUNCTION = _entetes_site
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["apps.core.authentication.TenantJWTAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],

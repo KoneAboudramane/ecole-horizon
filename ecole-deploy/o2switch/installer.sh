@@ -40,31 +40,13 @@ fi
 
 if [ "$GARDER" = 0 ]; then
   etape "Adresses"
-  if [ -z "${API_HOST:-}" ] || [ -z "${SITE:-}" ]; then
+  # Une seule adresse pour le site et l'API : celle de l'application Python dans cPanel
+  if [ -z "${API_HOST:-}" ]; then
     eval "$(python3 "$HERE/detecter.py" "$REPO_DIR")"
     [ -z "${ERREUR_DETECTION:-}" ] || die "$ERREUR_DETECTION"
-    if [ -n "${CREER_SITE:-}" ]; then
-      set -- $CREER_SITE
-      echo "Création du sous-domaine du site : $SITE  (dossier ecole-site)"
-      uapi --output=json SubDomain addsubdomain domain="$1" rootdomain="$2" dir="ecole-site" disallowdot=0 \
-        | python3 -c 'import json,sys; r=json.load(sys.stdin)["result"]; print(*(r.get("errors") or []), file=sys.stderr); sys.exit(0 if r.get("status") == 1 else 1)' \
-        || die "création de $SITE impossible : créez-le dans cPanel > Domaines avec la racine « ecole-site », puis relancez"
-      set --
-    fi
   fi
-  SITE="${SITE#https://}"; SITE="${SITE%/}"; API_HOST="${API_HOST#https://}"; API_HOST="${API_HOST%/}"
-  # Site compilé (branche site-o2switch) dans le dossier du sous-domaine du site
-  if [ ! -d "$SITE_DIR/.git" ]; then
-    echo "Site compilé -> $SITE_DIR"
-    mkdir -p "$SITE_DIR"
-    git -C "$SITE_DIR" init --quiet
-    git -C "$SITE_DIR" remote add origin "$(git -C "$REPO_DIR" remote get-url origin)" 2>/dev/null || true
-    git -C "$SITE_DIR" fetch --quiet origin site-o2switch
-    git -C "$SITE_DIR" checkout --quiet -f -B site-o2switch origin/site-o2switch
-    git -C "$SITE_DIR" branch --quiet --set-upstream-to=origin/site-o2switch site-o2switch
-  fi
-  echo "Site : https://$SITE"
-  echo "API  : https://$API_HOST"
+  API_HOST="${API_HOST#https://}"; API_HOST="${API_HOST%/}"; SITE="$API_HOST"
+  echo "Adresse : https://$API_HOST  (site + API)"
 
   etape "Base PostgreSQL"
   ask DB_NAME "Nom de la base" "$(id -un)_ecole-horizon"
@@ -96,7 +78,7 @@ DATABASE_URL=postgres://$(ENC "$DB_USER"):$(ENC "$DB_PASS")@localhost:5432/$(ENC
 NUM_PROXIES=0
 ADMIN_URL=$ADMIN_URL
 ECOLE_CODE=
-ECOLE_SITE_DIR=$SITE_DIR
+ECOLE_SITE_ROOT=$SITE_PUBLIC
 ACCESS_TOKEN_MINUTES=20
 REFRESH_TOKEN_DAYS=1
 LOGIN_MAX_ATTEMPTS=5
@@ -119,6 +101,11 @@ EOF
   chmod 600 .env
   echo ".env écrit (clé secrète et adresse d'administration générées)."
 fi
+
+etape "Site compilé (GitHub, branche site-o2switch)"
+if [ -d "$SITE_DIR/.git" ]; then git -C "$SITE_DIR" pull --ff-only --quiet || true
+else git clone --quiet -b site-o2switch "$(git -C "$REPO_DIR" remote get-url origin)" "$SITE_DIR"; fi
+echo "Site : $SITE_DIR (servi par l'application)"
 
 etape "Connexion à la base"
 python manage.py shell -c "from django.db import connection; connection.ensure_connection(); print('PostgreSQL', connection.pg_version // 10000 if connection.vendor == 'postgresql' else connection.vendor, ': connexion OK')" \
@@ -150,7 +137,6 @@ if [ -d "$API_ROOT" ]; then
 else
   echo "ATTENTION : dossier $API_ROOT absent ; photos à relier à la main :  ln -s $APP_DIR/media <dossier de l'API>/media"
 fi
-ecrire_config_site && echo "Site relié à l'API (config.js)."
 uapi SSL start_autossl_check >/dev/null 2>&1 && echo "Certificats HTTPS demandés (prêts en 5 à 30 minutes)." || true
 redemarrer
 mkdir -p "$HOME/sauvegardes-ecole" && chmod 700 "$HOME/sauvegardes-ecole"

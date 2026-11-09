@@ -7,8 +7,9 @@ DEPLOY_DIR="$(cd "$O2_DIR/.." && pwd)"
 APP_DIR="${APP_DIR:-$(cd "$DEPLOY_DIR/../ecole-backend" 2>/dev/null && pwd || echo "$HOME/ecole-backend")}"
 REPO_DIR="$(cd "$APP_DIR/.." && pwd)"
 # Copie du site compilé (branche site-o2switch du dépôt), mise à jour par mise-a-jour.sh
-_site_env="$(grep '^ECOLE_SITE_DIR=' "$APP_DIR/.env" 2>/dev/null | cut -d= -f2 || true)"
-SITE_DIR="${SITE_DIR:-${_site_env:-$HOME/ecole-site}}"
+SITE_DIR="${SITE_DIR:-$HOME/ecole-site}"
+# Copie servie par Django (sans .git) : réglage ECOLE_SITE_ROOT du .env
+SITE_PUBLIC="$APP_DIR/site_public"
 
 # Environnement Python créé par cPanel (« Setup Python App ») : ~/virtualenv/<racine de l'application>/<version>.
 # La racine de l'application peut être le dépôt (ecole-horizon) ou ecole-horizon/ecole-backend.
@@ -28,13 +29,18 @@ fi
 
 die() { echo "ERREUR : $*" >&2; exit 1; }
 
-# config.js du site : adresse de l'API lue dans le .env (le site et l'API peuvent avoir n'importe quels noms)
-ecrire_config_site() {
-  [ -d "$SITE_DIR" ] && [ -f "$APP_DIR/.env" ] || return 0
-  _api="$(grep '^ALLOWED_HOSTS=' "$APP_DIR/.env" | cut -d= -f2 | cut -d, -f1)"
-  _code="$(grep '^ECOLE_CODE=' "$APP_DIR/.env" | cut -d= -f2 || true)"
-  printf '// Écrit par les scripts O2switch à partir de ecole-backend/.env : ne pas modifier ici.\nwindow.ECOLE_API = "https://%s";\nwindow.ECOLE_CODE = "%s";\n' \
-    "$_api" "$_code" > "$SITE_DIR/config.js"
+# Copie le site compilé (clone git ~/ecole-site) vers le dossier servi par Django, sans .git ni .htaccess,
+# avec un config.js pointant vers la même adresse (site et API ensemble).
+exporter_site() {
+  [ -f "$SITE_DIR/index.html" ] || { echo "ATTENTION : site compilé absent ($SITE_DIR)"; return 0; }
+  _tmp="$SITE_PUBLIC.nouveau"
+  rm -rf "$_tmp" && mkdir -p "$_tmp"
+  (cd "$SITE_DIR" && tar -cf - --exclude=.git --exclude=.htaccess --exclude=LISEZMOI.txt .) | (cd "$_tmp" && tar -xf -)
+  _code="$(grep '^ECOLE_CODE=' "$APP_DIR/.env" 2>/dev/null | cut -d= -f2 || true)"
+  printf '// Écrit par les scripts O2switch : site et API sur la même adresse.\nwindow.ECOLE_API = location.origin;\nwindow.ECOLE_CODE = "%s";\n' \
+    "$_code" > "$_tmp/config.js"
+  rm -rf "$SITE_PUBLIC.ancien"; [ ! -d "$SITE_PUBLIC" ] || mv "$SITE_PUBLIC" "$SITE_PUBLIC.ancien"
+  mv "$_tmp" "$SITE_PUBLIC" && rm -rf "$SITE_PUBLIC.ancien"
 }
 
 redemarrer() { mkdir -p "$PASSENGER_ROOT/tmp" && touch "$PASSENGER_ROOT/tmp/restart.txt"; }
