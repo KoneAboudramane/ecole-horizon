@@ -121,6 +121,7 @@ LOG_LEVEL=INFO
 HSTS_INCLUDE_SUBDOMAINS=False
 EOF
   chmod 600 .env
+  umask 022     # seul le .env est privé : les fichiers suivants doivent être lisibles par Apache
   echo ".env écrit (clé secrète et adresse d'administration générées)."
 fi
 
@@ -216,6 +217,7 @@ else echo "Clés déjà présentes."; fi
 etape "Photos, site et sécurité"
 mkdir -p media
 cp "$HERE/api/media.htaccess" media/.htaccess
+chmod 755 media && chmod 644 media/.htaccess      # lus par Apache (photos servies directement)
 API_HOST="$(grep '^ALLOWED_HOSTS=' .env | cut -d= -f2 | cut -d, -f1)"
 API_ROOT="${API_ROOT:-$HOME/$API_HOST}"
 if [ -d "$API_ROOT" ]; then
@@ -223,6 +225,7 @@ if [ -d "$API_ROOT" ]; then
   if [ -f "$API_ROOT/.htaccess" ] && ! grep -q "Options -Indexes" "$API_ROOT/.htaccess"; then
     { grep -v '^#' "$HERE/api/.htaccess-a-ajouter"; echo; cat "$API_ROOT/.htaccess"; } > "$API_ROOT/.htaccess.tmp" && mv "$API_ROOT/.htaccess.tmp" "$API_ROOT/.htaccess"
   fi
+  chmod 644 "$API_ROOT/.htaccess"                  # illisible par Apache = « 403 Forbidden » sur tout le site
   echo "Photos : $API_ROOT/media"
 else
   echo "ATTENTION : dossier $API_ROOT absent ; photos à relier à la main :  ln -s $APP_DIR/media <dossier de l'API>/media"
