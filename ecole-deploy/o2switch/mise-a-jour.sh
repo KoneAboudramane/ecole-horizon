@@ -36,7 +36,9 @@ pip install --quiet --upgrade pip
 pip install --quiet -r requirements.txt
 
 echo "3/5 Migrations de la base (crée aussi la table du cache partagé)"
+python manage.py base_utf8mb4          # MySQL : jeu de caractères complet (arabe, apostrophes, flèches…)
 python manage.py migrate --noinput
+python manage.py base_utf8mb4          # tables créées par cette mise à jour
 
 echo "4/5 Fichiers statiques (administration Django)"
 python manage.py collectstatic --noinput --verbosity 0
