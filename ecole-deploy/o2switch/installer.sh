@@ -175,7 +175,29 @@ if grep -q "connexion OK" "$LOG" 2>/dev/null; then
 else
   echo "Raison : $(grep -iE 'FATAL|denied|refus|authenti|password|unknown database|does not exist|n.existe pas|can.t connect' "$LOG" | tail -n 1)"
   rm -f "$LOG"
-  if [ "$DB_TYPE" = mysql ]; then PAGE="Bases de données MySQL"; else PAGE="Bases de données PostgreSQL"; fi
+  if [ "$DB_TYPE" = mysql ]; then
+    # Aide : bases auxquelles cet utilisateur a réellement accès (souvent, le nom saisi n'est pas le bon)
+    python - .env <<'PY' || true
+import sys, urllib.parse as p
+import pymysql
+url = next(l.split("=", 1)[1].strip() for l in open(sys.argv[1], encoding="utf-8") if l.startswith("DATABASE_URL="))
+u = p.urlsplit(url)
+env = {l.split("=", 1)[0]: l.split("=", 1)[1].strip() for l in open(sys.argv[1], encoding="utf-8") if "=" in l and not l.startswith("#")}
+try:
+    kw = {"unix_socket": env["DB_SOCKET"]} if env.get("DB_SOCKET") else {"host": u.hostname or "localhost", "port": u.port or 3306}
+    c = pymysql.connect(user=p.unquote(u.username), password=p.unquote(u.password or ""), **kw)
+    with c.cursor() as cur:
+        cur.execute("SHOW DATABASES")
+        bases = [r[0] for r in cur.fetchall() if r[0] not in ("information_schema", "performance_schema")]
+    print(f"Bases accessibles par {p.unquote(u.username)} : {', '.join(bases) if bases else 'AUCUNE (utilisateur relié à aucune base)'}")
+    print(f"Base demandée : {p.unquote(u.path.lstrip('/'))}")
+except Exception as e:
+    print(f"(connexion de l'utilisateur impossible : {e})")
+PY
+    PAGE="Bases de données MySQL"
+  else PAGE="Bases de données PostgreSQL"; fi
+  # .env écrit pendant CET essai : on l'efface pour reposer les questions au prochain (jamais un .env déjà en service)
+  if [ "$GARDER" = 0 ]; then rm -f .env; fi
   die "la base refuse la connexion. Dans cPanel > « $PAGE » : 1) vérifiez le mot de passe de l'utilisateur ; 2) section « Ajouter un utilisateur à une base de données », choisissez l'utilisateur et la base, « Ajouter », cochez TOUS LES PRIVILÈGES. Puis relancez :  sh ~/gerer.sh $([ "${DEMO:-0}" = 1 ] && echo installer-demo || echo installer)"
 fi
 
